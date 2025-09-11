@@ -1,0 +1,4 @@
+# Resources directory
+# Contains external binaries for video processing:
+# - ffmpeg.exe (excluded from Git, download automatically)
+# - yt-dlp.exe (excluded from Git, download automatically)
