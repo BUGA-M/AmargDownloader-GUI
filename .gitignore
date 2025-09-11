@@ -115,4 +115,7 @@ temp/
 *.exe
 src-tauri/resources/ffmpeg.exe
 src-tauri/resources/yt-dlp.exe
-src-tauri/resources/
+src-tauri/resources/*.exe
+
+# Garder le .gitkeep pour maintenir le dossier
+!src-tauri/resources/.gitkeep
