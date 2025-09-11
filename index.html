@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMARG Downloader</title>
+    <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header" >
+        <div class="logo-section">
+            <div class="logo">
+                <img src="src/assets/A letter Logo.png" alt="AMARG Logo" class="logo-img">
+            </div>
+            <div class="title-LOGO">
+                <h1>MARG DOWNLOADER</h1>
+                <p>Advanced media downloader</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="status-bar">
+                <!-- Utilisation d'une structure répétée pour chaque status-item -->
+                <div class="status-item">
+                    <span class="status-icon cpu">
+                        <img src="src/assets/cpu-orange.png" alt="AMARG cpu" class="logo-img">
+                    </span>
+                    <span>47%</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-icon storage">
+                        <img src="src/assets/hdd-orange.png" alt="AMARG cpu" class="logo-img">
+                    </span>
+                    <span>50%</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-icon wifi">
+                        <img src="src/assets/network-orange.png" alt="AMARG wifi" class="logo-img">
+                    </span>
+                    <span>27%</span>
+                </div>
+            </div>
+            <div class="header-controls">
+                <!-- Bouton clair mode -->
+                <div class="control-btn">
+                    <span class="status-icon cpu " id="theme-toggle">
+                        <img src="src/assets/sun-orange.png" alt="clair mode" class="logo-img">
+                    </span>
+                </div>
+                <!-- Bouton settings -->
+                <div class="control-btn" id = "open-app-setting" >
+                    <span class="status-icon cpu">
+                        <img src="src/assets/settings-orange.png" alt="clair mode" class="logo-img">
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <div class="nav-btn  active ">
+            <img src="src/assets/download-dark.png" alt="Download icon">
+            <span class="nav-icon">
+                Download
+            </span>
+        </div>
+        <div class="nav-btn " id="history">
+            <img src="src/assets/history-dark.png" alt="History icon">
+            <span class="nav-icon">
+                History
+            </span>
+        </div>
+        <div class="nav-btn">
+            <img src="src/assets/analystics-dark.png" alt="Analytics icon">
+            <span class="nav-icon">
+                Analytics
+            </span>
+        </div>
+        <div class="nav-btn " id="open-settings-btn">
+            <img src="src/assets/settings-dark.png" alt="Setting icon">
+            <span class="nav-icon">
+                Settings
+            </span>
+        </div>
+    </nav>
+
+    <!-- Quick Presets Section -->
+    <section class="quick-presets">
+        <div class="title-section">
+            <img src="src/assets/elec-orange.png" alt="Setting icon">
+            <span class="nav-icon">Quick Presets</span>
+        </div>
+        
+        <div class="presets-grid">
+            <div class="preset-card ">
+                <div class="preset-icon">
+                    <img src="src/assets/mobile-dark.png" alt="mobile">
+                </div>
+                <h3>Mobile Optimized</h3>
+                <p>720p MP4, smaller file size</p>
+            </div>
+            <div class="preset-card">
+                <div class="preset-icon">
+                    <img src="src/assets/monitor-dark.png" alt="monitor">
+                </div>
+                <h3>Balanced Quality</h3>
+                <p>1080p MP4, good quality | size ration</p>
+            </div>
+            <div class="preset-card active">
+                <div class="preset-icon">
+                    <img src="src/assets/premium-dark.png" alt="premiun">
+                </div>
+                <h3>Premium Quality</h3>
+                <p>2-4k MP4, maximum quality</p>
+            </div>
+            <div class="preset-card">
+                <div class="preset-icon">
+                    <img src="src/assets/audio-dark.png" alt="audio">
+                </div>
+                <h3>Audio Only</h3>
+                <p>320Kbps MP3, music focused</p>
+            </div>
+        </div>
+    </section>
+    <section class="media-urls">
+        <div class="title-section">
+            <img src="src/assets/internet-orange.png" alt="Setting icon">
+            <span class="nav-icon">Media URLs</span>
+        </div>
+        <div class="url-input-section">
+            <input type="text" class="url-input" placeholder="Paste Youtube,Tiktok,Instagram,or other media URLs...">
+            <button class="add-btn">+</button>
+        </div>
+        
+        <div class="download-options">
+            <div class="option-group">
+                <label>Format</label>
+                <select class="select-dropdown" id="Format-input">
+                    <option value="mp4">🎬 MP4</option>
+                    <option value="mp3">🎵 MP3</option>
+                </select>
+            </div>
+            <div class="option-group">
+                <label>Quality</label>
+                <select class="select-dropdown" disabled>
+                    <option  value="default">Max quality</option>
+                    <option  value="1080p">Full HD (1080p)</option>
+                    <option value="720p">HD (720p)</option>
+                </select>
+            </div>
+            <!-- Name OUTPUT-->
+            <div class="option-group">
+                <label>Output Name</label>
+                <input type="text" class="url-input name-input" placeholder="Enter output name..." >
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <div class="download-btn" id="download-btn">
+              <img src="src/assets/download-dark.png" alt="Download icon">
+              <span class="nav-icon" id="dwl_btn_text">
+                  Start Bash Download ( 0 )
+              </span>
+            </div>
+            <div class="schedule-btn">
+              <img src="src/assets/schedule-dark.png" alt="Download icon">
+              <span class="nav-icon">
+                  Schedule
+              </span>
+            </div>
+        </div>
+    </section>
+    <!-- Custom alert -->
+    <div id="custom-alert-container"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
