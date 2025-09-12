@@ -117,15 +117,16 @@ Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/do
 ```
 </details>
 
+### 🧑‍💻 Development Setup
+
 ### Pre-built Releases
 1. Download the latest release from the [Releases](https://github.com/BUGA-M/AmargDownloder-GUI/releases/tag/resources) page
-2. Run the installer (`AMARG-Downloader-Setup.exe`)
-3. Follow the installation wizard
-4. Launch from Start Menu or Desktop shortcut
+- ffmpeg.exe
+- yt-dlp.exe
 
+2. Move Releases to  **"src-tauri\resources"**
+3. Follow this commands
 
-
-### 🧑‍💻 Development Setup
 ```bash
 # Clone the repository
 git clone https://github.com/BUGA-M/AmargDownloder-GUI.git
