@@ -70,7 +70,7 @@ A lightweight, fast, and user-friendly desktop application for downloading video
 ### ⚡ Quick Setup
 
 <details>
-<summary><b><img src="src/assets/exe.png" alt= "Executabe"> Installation via Executable (Windows)</b></summary>
+<summary><b><img src="src/assets/exe.png" alt= "Executabe" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" > Installation via Executable (Windows)</b></summary>
 <br>
 
 ```powershell
@@ -86,7 +86,7 @@ Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/do
 </details>
 
 <details>
-<summary><b><img src="src/assets/nsis.png" alt= "nsis-setup"> Installation via NSIS Installer</b></summary>
+<summary><b><img src="src/assets/nsis.png" alt= "nsis-setup" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" > Installation via NSIS Installer</b></summary>
 <br>
 
 ```powershell
@@ -102,7 +102,7 @@ Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/do
 </details>
 
 <details>
-<summary><b><img src="src/assets/msi.png" alt= "msi-setup"> Installation via MSI Installer</b></summary>
+<summary><b><img src="src/assets/msi.png" alt= "msi-setup" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" > Installation via MSI Installer</b></summary>
 <br>
 
 ```powershell
@@ -125,7 +125,7 @@ Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/do
 
 
 
-### Development Setup
+### 🧑‍💻 Development Setup
 ```bash
 # Clone the repository
 git clone https://github.com/BUGA-M/AmargDownloder-GUI.git
