@@ -120,13 +120,6 @@ Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/do
 
 ### 🧑‍💻 Development Setup
 
-1. Download the latest release from the [Releases](https://github.com/BUGA-M/AmargDownloder-GUI/releases/tag/resources) page
-- ffmpeg.exe
-- yt-dlp.exe
-
-2. Move Releases to  **"src-tauri\resources"**
-3. Follow this commands
-
 ```bash
 # Clone the repository
 git clone https://github.com/BUGA-M/AmargDownloder-GUI.git
@@ -134,6 +127,18 @@ cd AmargDownloder-GUI
 
 # Install dependencies
 npm install
+
+# Navigate to resources directory
+cd src-tauri/resources
+
+# Download FFmpeg executable
+Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/resources/ffmpeg.exe" -OutFile "ffmpeg.exe"
+
+# Download yt-dlp executable
+Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/resources/yt-dlp.exe" -OutFile "yt-dlp.exe"
+
+# Go back to project root
+cd ../..
 
 # Install Rust dependencies
 cd src-tauri
