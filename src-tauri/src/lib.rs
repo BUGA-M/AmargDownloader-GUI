@@ -172,31 +172,22 @@ pub fn run() {
             info_urls::copy_temp_to_history,
             info_urls::add_to_single_download_by_date,
         ])
+
         // Setup (config initiale)
         .setup(|app| {
             let splash = app.get_webview_window("splashscreen").unwrap();
             let main = app.get_webview_window("main").unwrap();
 
-            // ✅ Async non bloquant
-            tauri::async_runtime::spawn({
-                let splash = splash.clone();
-                let main = main.clone();
-                async move {
-                    // Simulation d’un traitement long
-                    sleep(Duration::from_secs(4)).await;
+            // ✅ Détecter le mode au début
+            let args: Vec<String> = std::env::args().collect();
+            let is_startup_mode = args.contains(&"--minimized".to_string());
 
-                    // Switch splash → main
-                    let _ = splash.destroy();
-                    let _ = main.show();
-                }
-            });
-
-            // ✅ Menu et Tray
+            // ✅ Menu et Tray (peu importe le mode)
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let open_i = MenuItem::with_id(app, "open", "Open AMARG Window", true, None::<&str>)?;
             let open_folder_i = MenuItem::with_id(
                 app,
-                "open_folder",
+                "open_folder", 
                 "Open Downloads Folder",
                 true,
                 None::<&str>,
@@ -229,14 +220,31 @@ pub fn run() {
                 _ => {}
             });
 
-            let args: Vec<String> = std::env::args().collect();
-            if args.contains(&"--minimized".to_string()) {
-                main.hide().unwrap();
+            // ✅ Logique conditionnelle unifiée
+            if is_startup_mode {
+                // MODE STARTUP : Tray seulement, pas de splashscreen
+                let _ = splash.destroy(); // On n'a pas besoin du splash
+                let _ = main.hide();      // Main reste cachée
             } else {
-                main.show().unwrap();
-            } 
+                // MODE NORMAL : Splashscreen puis main
+                tauri::async_runtime::spawn({
+                    let splash = splash.clone();
+                    let main = main.clone();
+                    async move {
+                        // Splashscreen pendant 4s
+                        sleep(Duration::from_secs(4)).await;
+                        
+                        // Transition splash → main
+                        let _ = splash.destroy();
+                        let _ = main.show();
+                        let _ = main.set_focus();
+                    }
+                });
+            }
+
             Ok(())
         })
+
         // ✅ Empêcher la fermeture → cache la fenêtre
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
