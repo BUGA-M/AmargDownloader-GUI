@@ -1,6 +1,23 @@
 # AMARG Downloader
 
-![AMARG Downloader](src/assets/AMARG%20Downloader%20.png)
+<div align="center">
+
+<img src="src/assets/A%20letter%20Logo.png" alt="Logo AMARG" width="80px">
+
+# 
+
+[![GitHub stars](https://img.shields.io/github/stars/BUGA-M/AmargDownloder-GUI?style=for-the-badge&logo=github)](https://github.com/BUGA-M/AmargDownloder/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/BUGA-M/AmargDownloder-GUI?style=for-the-badge&logo=github)](https://github.com/BUGA-M/AmargDownloder/network/members)
+[![Made with TAURI](https://img.shields.io/badge/Made%20with-Python-1f425f.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![yt-dlp](https://img.shields.io/badge/Powered%20by-yt--dlp-FF6B35?style=for-the-badge&logo=youtube&logoColor=white)](https://github.com/yt-dlp/yt-dlp)
+[![FFmpeg](https://img.shields.io/badge/FFmpeg-007808?style=for-the-badge&logo=ffmpeg&logoColor=white)](https://ffmpeg.org/)
+
+<img src="./assets/banner.png" alt="Banner AMARG" width="100%" style="max-width: 850px;border-radius: 16px;">
+
+</div>
+---
+
+## 📋 About
 
 A lightweight, fast, and user-friendly desktop application for downloading videos and audio from various online platforms including YouTube, TikTok, Instagram, and more.
 
@@ -56,11 +73,61 @@ A lightweight, fast, and user-friendly desktop application for downloading video
 3. Follow the installation wizard
 4. Launch from Start Menu or Desktop shortcut
 
+### Installation Rapide
+
+<details>
+<summary><b>💻 Installation via exécutable (Windows)</b></summary>
+<br>
+
+```powershell
+# Créer le dossier de destination
+mkdir -p AmargDownloaderBeta
+
+# Télécharger l'exécutable
+Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v0.1.0-beta/AMARG-Downloder-beta.exe" -OutFile "AmargDownloaderBeta\AMARG-Downloader-beta.exe"
+
+# Lancer l'application
+.\AmargDownloaderBeta\AMARG-Downloader-beta.exe
+```
+</details>
+
+<details>
+<summary><b>💻 Installation via installateur NSIS</b></summary>
+<br>
+
+```powershell
+# Créer le dossier de destination
+mkdir -p AmargDownloaderBeta
+
+# Télécharger l'installateur NSIS
+Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v0.1.0-beta/AMARG.Downloader.beta_0.1.0_x64-setup.exe" -OutFile "AmargDownloaderBeta\AMARG-Setup-NSIS.exe"
+
+# Lancer l'installateur
+.\AmargDownloaderBeta\AMARG-Setup-NSIS.exe
+```
+</details>
+
+<details>
+<summary><b>💻 Installation via installateur MSI</b></summary>
+<br>
+
+```powershell
+# Créer le dossier de destination
+mkdir -p AmargDownloaderBeta
+
+# Télécharger l'installateur MSI
+Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v0.1.0-beta/AMARG.Downloader.beta_0.1.0_x64_en-US.msi" -OutFile "AmargDownloaderBeta\AMARG-Setup.msi"
+
+# Lancer l'installateur MSI
+.\AmargDownloaderBeta\AMARG-Setup.msi
+```
+</details>
+
 ### Development Setup
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd app1-test
+git clone https://github.com/BUGA-M/AmargDownloder-GUI.git
+cd AmargDownloder-GUI
 
 # Install dependencies
 npm install
@@ -195,7 +262,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔄 Version History
 
-### v0.1.0 (Current)
+### v0.1.0-beta (Current)
 - Initial release
 - Basic download functionality
 - Multi-platform support
@@ -205,7 +272,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-![Splash Screen](src/assets/slpashscreen.png)
+![AMARG Downloader](src/assets/AMARG-Downloader.png)
 
 **Made with ❤️ by BUGA**
 
