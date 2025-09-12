@@ -12,9 +12,11 @@
 [![yt-dlp](https://img.shields.io/badge/Powered%20by-yt--dlp-FF6B35?style=for-the-badge&logo=youtube&logoColor=white)](https://github.com/yt-dlp/yt-dlp)
 [![FFmpeg](https://img.shields.io/badge/FFmpeg-007808?style=for-the-badge&logo=ffmpeg&logoColor=white)](https://ffmpeg.org/)
 
-<img src="./assets/banner.png" alt="Banner AMARG" width="100%" style="max-width: 850px;border-radius: 16px;">
+<img src="src//assets/banner.png" alt="Banner AMARG" width="100%" style="max-width: 850px;border-radius: 16px;">
 
 </div>
+
+
 ---
 
 ## 📋 About
@@ -119,7 +121,6 @@ Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/do
 
 ### 🧑‍💻 Development Setup
 
-### Pre-built Releases
 1. Download the latest release from the [Releases](https://github.com/BUGA-M/AmargDownloder-GUI/releases/tag/resources) page
 - ffmpeg.exe
 - yt-dlp.exe
