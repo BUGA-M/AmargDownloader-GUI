@@ -67,61 +67,63 @@ A lightweight, fast, and user-friendly desktop application for downloading video
 
 ## 🚀 Installation
 
-### Pre-built Releases
-1. Download the latest release from the [Releases](../../releases) page
-2. Run the installer (`AMARG-Downloader-Setup.exe`)
-3. Follow the installation wizard
-4. Launch from Start Menu or Desktop shortcut
-
-### Installation Rapide
+### ⚡ Quick Setup
 
 <details>
-<summary><b>💻 Installation via exécutable (Windows)</b></summary>
+<summary><b><img src="src/assets/exe.png" alt= "Executabe"> Installation via Executable (Windows)</b></summary>
 <br>
 
 ```powershell
-# Créer le dossier de destination
+# Create destination folder
 mkdir -p AmargDownloaderBeta
 
-# Télécharger l'exécutable
+# Download the executable
 Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v0.1.0-beta/AMARG-Downloder-beta.exe" -OutFile "AmargDownloaderBeta\AMARG-Downloader-beta.exe"
 
-# Lancer l'application
+# Run the application
 .\AmargDownloaderBeta\AMARG-Downloader-beta.exe
 ```
 </details>
 
 <details>
-<summary><b>💻 Installation via installateur NSIS</b></summary>
+<summary><b><img src="src/assets/nsis.png" alt= "nsis-setup"> Installation via NSIS Installer</b></summary>
 <br>
 
 ```powershell
-# Créer le dossier de destination
+# Create destination folder
 mkdir -p AmargDownloaderBeta
 
-# Télécharger l'installateur NSIS
+# Download the NSIS installer
 Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v0.1.0-beta/AMARG.Downloader.beta_0.1.0_x64-setup.exe" -OutFile "AmargDownloaderBeta\AMARG-Setup-NSIS.exe"
 
-# Lancer l'installateur
+# Run the installer
 .\AmargDownloaderBeta\AMARG-Setup-NSIS.exe
 ```
 </details>
 
 <details>
-<summary><b>💻 Installation via installateur MSI</b></summary>
+<summary><b><img src="src/assets/msi.png" alt= "msi-setup"> Installation via MSI Installer</b></summary>
 <br>
 
 ```powershell
-# Créer le dossier de destination
+# Create destination folder
 mkdir -p AmargDownloaderBeta
 
-# Télécharger l'installateur MSI
+# Download the MSI installer
 Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v0.1.0-beta/AMARG.Downloader.beta_0.1.0_x64_en-US.msi" -OutFile "AmargDownloaderBeta\AMARG-Setup.msi"
 
-# Lancer l'installateur MSI
+# Run the MSI installer
 .\AmargDownloaderBeta\AMARG-Setup.msi
 ```
 </details>
+
+### Pre-built Releases
+1. Download the latest release from the [Releases](https://github.com/BUGA-M/AmargDownloder-GUI/releases/tag/resources) page
+2. Run the installer (`AMARG-Downloader-Setup.exe`)
+3. Follow the installation wizard
+4. Launch from Start Menu or Desktop shortcut
+
+
 
 ### Development Setup
 ```bash
