@@ -61,7 +61,13 @@
     "resources": [
       "resources/yt-dlp.exe",
       "resources/ffmpeg.exe"
-    ] 
+    ],
+    "publisher": "AMARG",
+    "copyright": "Copyright © 2024 AMARG. All rights reserved.",
+    "windows": {
+      "digestAlgorithm": "sha256",
+      "timestampUrl": null
+    }
   },
   "plugins": {}
 }
