@@ -1,18 +1,17 @@
-# AMARG Downloader
 
 <div align="center">
 
 <img src="src/assets/A%20letter%20Logo.png" alt="Logo AMARG" width="80px">
 
-# 
+# AMARG Downloader
 
 [![GitHub stars](https://img.shields.io/github/stars/BUGA-M/AmargDownloder-GUI?style=for-the-badge&logo=github)](https://github.com/BUGA-M/AmargDownloder/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/BUGA-M/AmargDownloder-GUI?style=for-the-badge&logo=github)](https://github.com/BUGA-M/AmargDownloder/network/members)
-[![Made with TAURI](https://img.shields.io/badge/Made%20with-Python-1f425f.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Made with Tauri](https://img.shields.io/badge/Made%20with-Tauri-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
 [![yt-dlp](https://img.shields.io/badge/Powered%20by-yt--dlp-FF6B35?style=for-the-badge&logo=youtube&logoColor=white)](https://github.com/yt-dlp/yt-dlp)
 [![FFmpeg](https://img.shields.io/badge/FFmpeg-007808?style=for-the-badge&logo=ffmpeg&logoColor=white)](https://ffmpeg.org/)
 
-<img src="src//assets/banner.png" alt="Banner AMARG" width="100%" style="max-width: 850px;border-radius: 16px;">
+<img src="src/assets/banner.png" alt="Banner AMARG" width="100%" style="max-width: 850px;border-radius: 16px;">
 
 </div>
 
