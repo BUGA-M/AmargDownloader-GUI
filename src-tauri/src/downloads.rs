@@ -625,28 +625,52 @@ pub async fn one_vd_dwl(
     let mut args: Vec<String> = Vec::new();
     args.push(url.clone());
 
+    // Arguments de base optimisés
     args.push("--no-warnings".to_string());
     args.push("--no-playlist".to_string());
     args.push("--no-progress".to_string());
-    args.push("-vU".to_string());
+    args.push("--no-overwrites".to_string());
+    args.push("--verbose".to_string());
     args.push("--restrict-filenames".to_string());
+    args.push("--no-mtime".to_string()); // Évite les problèmes de timestamp
+    args.push("--embed-metadata".to_string()); // Métadonnées dans le fichier
+    args.push("--socket-timeout".to_string());
+    args.push("30".to_string());
+    args.push("--retries".to_string());
+    args.push("3".to_string());
+    args.push("--fragment-retries".to_string());
+    args.push("3".to_string());
+
+    // User agent et headers
+    args.push("--user-agent".to_string());
+    args.push("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.109 Safari/537.36".to_string());
+    args.push("--add-header".to_string());
+    args.push("Accept-Language: en-US,en;q=0.9,fr;q=0.8".to_string());
+    args.push("--geo-bypass".to_string());
 
     if extract_audio {
         args.push("-f".to_string());
-        args.push("bestaudio[ext=m4a]/bestaudio".to_string());
+        args.push("bestaudio/best".to_string()); // Plus robuste
         args.push("--extract-audio".to_string());
         args.push("--audio-format".to_string());
         args.push("mp3".to_string());
         args.push("--audio-quality".to_string());
         args.push("0".to_string());
+
+        // >>> miniature intégrée <<<
+        args.push("--embed-thumbnail".to_string());
+        args.push("--convert-thumbnails".to_string());
+        args.push("jpg".to_string());
+
     } else {
         args.push("-f".to_string());
         args.push("bestvideo+bestaudio[ext=m4a]/bestvideo+bestaudio/best".to_string());
         args.push("--merge-output-format".to_string());
         args.push("mp4".to_string());
+    
     }
 
-    // Force l'utilisation du binaire ffmpeg packagé
+ // Force l'utilisation du binaire ffmpeg packagé
     args.push("--ffmpeg-location".to_string());
     args.push(
         ffmpeg_path
@@ -655,7 +679,10 @@ pub async fn one_vd_dwl(
             .to_string_lossy()
             .to_string(),
     );
+    args.push("--fixup".to_string());
+    args.push("warn".to_string());
 
+    // Sortie avec template pour parsing plus fiable
     args.push("-o".to_string());
     args.push(output_option.clone());
 

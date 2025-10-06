@@ -722,6 +722,7 @@ function createVideoCardWithDelete(videoData: VideoData, index: number, updateSe
                 card.remove();
                 // Si aucune vidéo restante, afficher le message d'état vide
                 if (newCount === 0) {
+                    
                     console.log("Aucune vidéo restante dans le planning.");
                     const content = document.querySelector(".customAlert") as HTMLDivElement;
                     const emptyState = document.createElement("div");
@@ -735,8 +736,8 @@ function createVideoCardWithDelete(videoData: VideoData, index: number, updateSe
                             <path d="M23 7l-7 5 7 5V7z" stroke="currentColor" stroke-width="2"/>
                             <rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
                         </svg>
-                        <h3 style="color: white; font-size: 20px; margin: 0 0 8px 0;">Aucune vidéo trouvée</h3>
-                        <p style="margin: 0; font-size: 16px;">Ajoutez des vidéos pour commencer</p>
+                        <h3 style="color: ${currenTTheme?.trim() === "light" ? "#000000" : "rgb(255, 255, 255)"}; font-size: 20px; margin: 0 0 8px 0;">Aucune vidéo trouvée</h3>
+                        <p style="color: ${currenTTheme?.trim() === "light" ? "#00000099" : "#ffffff99"};margin: 0; font-size: 16px;">Ajoutez des vidéos pour commencer</p>
                     `;
                     content.appendChild(emptyState);
                     

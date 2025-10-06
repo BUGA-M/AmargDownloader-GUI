@@ -61,6 +61,7 @@ pub async fn get_video_info(
             "--socket-timeout", "30",
             &url
         ])
+        .creation_flags(0x08000000) // pour ne pas afficher de console
         .stdout(Stdio::piped())
         .output()
         .await
@@ -204,6 +205,8 @@ pub async fn get_video_info(
 
     Ok(info)
 }
+
+
 
 
 // -------------------------------------------------------------------------------- 

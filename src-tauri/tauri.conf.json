@@ -22,7 +22,7 @@
         "resizable": true,
         "visible": false,
         "center": true,
-        "devtools": false,
+        "devtools": true,
         "focus": false
       },
       {
@@ -62,7 +62,7 @@
       "resources/yt-dlp.exe",
       "resources/ffmpeg.exe"
     ],
-    "publisher": "AMARG",
+    "publisher": "BUGA",
     "copyright": "Copyright © 2024 AMARG. All rights reserved.",
     "windows": {
       "digestAlgorithm": "sha256",

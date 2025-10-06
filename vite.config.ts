@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import type { PreRenderedAsset } from 'rollup';
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
@@ -23,14 +24,12 @@ export default defineConfig(async () => ({
   build: {
     rollupOptions: {
       output: {
-        // ici on fixe le nom des assets
-        assetFileNames: (assetInfo) => {
-          // si le fichier est logo.png, on le garde sans hash
-          if (assetInfo.name === 'A letter Logo.png') {
-            return 'assets/[name][extname]';
-          }
-          // sinon garder le hash pour les autres assets
-          return 'assets/[name]-[hash][extname]';
+        assetFileNames: (assetInfo: PreRenderedAsset) => {
+          const fileName = assetInfo.name ?? '';
+
+          return fileName === 'A letter Logo.png'
+            ? 'assets/[name][extname]'
+            : 'assets/[name]-[hash][extname]';
         },
       },
     },

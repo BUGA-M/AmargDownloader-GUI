@@ -11,11 +11,17 @@ import { BtnTheme } from  './components/toggleTheme';
 import { Verify } from  './utils/verifHTML'; 
 import { showDownloadSpinner, updateSpinnerText,stopDownloadSpinner } from  './components/SimpleProgress'; 
 
+
 import { block } from './components/BlockRLclick';
 
 import { SchedulePage,fetchTempDwl,extractInfo_to_json,delete_temp_dwl } from './components/Schedule'
 
 import { VideoMultiDwlQueue } from  './utils/listMultiDwlVid';
+ 
+import { support } from "./components/Support";
+
+import { init3DViewer  } from './components/Model3d';
+import {bugaPopup} from "./components/BugaPopup"
 
 initSystemTheme()
 BtnTheme()
@@ -545,3 +551,17 @@ export async function clearVideoList() {
   console.log("All videos cleared from the list.");
   console.log("la liste est : ",MultiDwlvideosList);
 }
+
+//------------------------------ Support ------------------------------------//
+
+support();
+
+
+//------------------------------ init 3D model ------------------------------------//
+const container = document.getElementById('viewer')!;
+//init3DViewer(container, 'tauri://utils/bird_orange_beta.glb'); //mode dev 
+
+const modelUrl = new URL('./utils/BUGA.glb', import.meta.url).href;
+init3DViewer(container, modelUrl);
+
+bugaPopup();

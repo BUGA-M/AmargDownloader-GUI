@@ -121,3 +121,4 @@ src-tauri/resources/*.exe
 !src-tauri/resources/.gitkeep
 
 src-tauri/2
+vite.config.txt

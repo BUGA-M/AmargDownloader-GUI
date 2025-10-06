@@ -13,6 +13,7 @@ use tauri::{
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_dialog::DialogExt;
 use tokio::time::{sleep, Duration};
+use webbrowser;
 
 mod info_urls;
 mod downloads;
@@ -85,6 +86,15 @@ async fn open_folder(path: String) -> Result<(), String> {
 
     Ok(())
 }
+// 2️⃣ Open link on a browser 
+
+#[command]
+async fn open_link(url: String) -> Result<(), String> {
+    webbrowser::open(&url)
+        .map_err(|e| format!("Failed to open browser: {}", e))?;
+    Ok(())
+}
+
 
 /// 2️⃣ Telecharge une vidéo avec yt-dlp
 #[command]
@@ -171,6 +181,7 @@ pub fn run() {
             info_urls::delete_video_by_id,
             info_urls::copy_temp_to_history,
             info_urls::add_to_single_download_by_date,
+            open_link
         ])
 
         // Setup (config initiale)
