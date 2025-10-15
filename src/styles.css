@@ -703,3 +703,14 @@ body {
 */   
 
 
+/* Assurer que la barre est au-dessus de tout 
+.download-progress-container {
+    pointer-events: auto !important;
+    visibility: visible !important;
+}
+
+/* Animation smooth 
+.progress-bar-fill {
+    transition: width 0.5s ease-in-out !important;
+}
+*/

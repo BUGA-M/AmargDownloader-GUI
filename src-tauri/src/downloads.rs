@@ -1,11 +1,14 @@
 use serde::{Deserialize, Serialize};
 use serde_json; // for json! macro payloads
-use std::process::Command;
+use std::process::{Command,Stdio};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::time::Duration;
 use tauri::{command, AppHandle, Emitter, Manager};
+
+use std::io::{BufRead, BufReader};
+use regex::Regex;
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt; // for creation_flags
@@ -31,6 +34,17 @@ pub struct MultiDownloadProgress {
     pub completed: usize,
     pub current_url: String,
     pub results: Vec<DownloadResult>,
+}
+
+#[derive(Clone, Serialize)]
+struct ProgressPayload {
+    url: String,
+    progress: f64,
+    speed: String,
+    eta: String,
+    downloaded_bytes: u64,
+    total_bytes: u64,
+    video_name: String,
 }
 
 // -------------------------------
@@ -82,270 +96,8 @@ fn default_output_dir() -> Result<String, String> {
     Ok(p.to_string_lossy().to_string())
 }
 
-// -------------------------------
-// 1) Version NON-BLOCKING (threads système)
-// -------------------------------
-#[command]
-pub async fn multi_vd_dwl_non_blocking(
-    handle: AppHandle,
-    videos: Vec<VideoDownload>,
-    no_part: Option<bool>,
-    ignore_errors: Option<bool>,
-    concurrent_fragments: Option<String>,
-    output_path: Option<String>,
-    format: Option<String>,
-    max_concurrent: Option<usize>,
-) -> Result<Vec<DownloadResult>, String> {
-    if videos.is_empty() {
-        return Err("Aucune vidéo à télécharger".to_string());
-    }
-
-    let max_concurrent = max_concurrent.unwrap_or(3);
-    let total_videos = videos.len();
-
-    // Canal pour recevoir les résultats
-    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<DownloadResult>();
-
-    println!("Début du téléchargement de {} vidéo(s)", total_videos);
-
-    // Traitement par chunks mais avec des threads système
-    for chunk in videos.chunks(max_concurrent) {
-        let mut thread_handles = Vec::new();
-
-        for video in chunk {
-            let handle_clone = handle.clone();
-            let url = video.url.clone();
-            let video_name = video.video_name.clone();
-            let no_part_clone = no_part;
-            let ignore_errors_clone = ignore_errors;
-            let concurrent_fragments_clone = concurrent_fragments.clone();
-            let output_path_clone = output_path.clone();
-            let format_clone = format.clone();
-            let tx_clone = tx.clone();
-
-            let thread_handle = thread::spawn(move || {
-                // Runtime tokio local à ce thread
-                let rt = tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .expect("Failed to create tokio runtime");
-
-                let result = rt.block_on(async {
-                    one_vd_dwl(
-                        handle_clone,
-                        url.clone(),
-                        video_name,
-                        no_part_clone,
-                        ignore_errors_clone,
-                        concurrent_fragments_clone,
-                        output_path_clone,
-                        format_clone,
-                    )
-                    .await
-                });
-
-                let download_result = match result {
-                    Ok(path) => {
-                        let status = if path.contains("Déjà téléchargé") {
-                            "already_downloaded"
-                        } else if path == "server issue" {
-                            "server_error"
-                        } else if path == "url not found or expired" {
-                            "not_found"
-                        } else if path == "cnx error" {
-                            "connection_error"
-                        } else {
-                            "success"
-                        };
-
-                        DownloadResult {
-                            url,
-                            status: status.to_string(),
-                            path: if status == "success" || status == "already_downloaded" {
-                                Some(path)
-                            } else {
-                                None
-                            },
-                            error: None,
-                        }
-                    }
-                    Err(error) => DownloadResult {
-                        url,
-                        status: "error".to_string(),
-                        path: None,
-                        error: Some(error),
-                    },
-                };
-
-                let _ = tx_clone.send(download_result);
-            });
-
-            thread_handles.push(thread_handle);
-        }
-
-        for thread_handle in thread_handles {
-            let _ = thread_handle.join();
-        }
-
-        // Petit délai entre les chunks
-        thread::sleep(Duration::from_millis(500));
-    }
-
-    drop(tx); // fermeture de l'émetteur pour terminer le `rx`
-
-    // Collecte de tous les résultats
-    let mut final_results = Vec::new();
-    while let Some(result) = rx.recv().await {
-        println!("Téléchargement terminé pour {}: {}", result.url, result.status);
-        final_results.push(result);
-    }
-
-    let success_count = final_results.iter().filter(|r| r.status == "success").count();
-    println!(
-        "Téléchargement terminé: {}/{} réussis",
-        success_count, total_videos
-    );
-
-    Ok(final_results)
-}
-
-// -------------------------------
-// 2) Version ULTRA-LÉGÈRE (arrière-plan)
-// -------------------------------
-#[command]
-pub async fn start_multi_download_background(
-    handle: AppHandle,
-    videos: Vec<VideoDownload>,
-    no_part: Option<bool>,
-    ignore_errors: Option<bool>,
-    concurrent_fragments: Option<String>,
-    output_path: Option<String>,
-    max_concurrent: Option<usize>,
-) -> Result<String, String> {
-    if videos.is_empty() {
-        return Err("Aucune vidéo à télécharger".to_string());
-    }
-
-    let download_id = uuid::Uuid::new_v4().to_string();
-    let download_id_clone = download_id.clone();
-    let max_concurrent = max_concurrent.unwrap_or(3);
-
-    // compteur atomique de progression
-    let completed_atomic = Arc::new(AtomicUsize::new(0));
-
-    let handle_thread = handle.clone();
-    thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("Failed to create tokio runtime");
-
-        rt.block_on(async move {
-            let total_videos = videos.len();
-
-            println!(
-                "[{}] Début du téléchargement de {} vidéo(s)",
-                download_id_clone, total_videos
-            );
-
-            for chunk in videos.chunks(max_concurrent) {
-                let mut thread_handles = Vec::new();
-
-                for video in chunk {
-                    let handle_clone = handle_thread.clone();
-                    let url = video.url.clone();
-                    let video_name = video.video_name.clone();
-                    let no_part_clone = no_part;
-                    let ignore_errors_clone = ignore_errors;
-                    let concurrent_fragments_clone = concurrent_fragments.clone();
-                    let output_path_clone = output_path.clone();
-                    let format_clone = video.format.clone();
-                    let download_id_thread = download_id_clone.clone();
-                    let completed_clone = completed_atomic.clone();
-
-                    let thread_handle = thread::spawn(move || {
-                        let rt = tokio::runtime::Builder::new_current_thread()
-                            .enable_all()
-                            .build()
-                            .expect("Failed to create tokio runtime");
-
-                        rt.block_on(async move {
-                            let result = one_vd_dwl(
-                                handle_clone.clone(),
-                                url.clone(),
-                                video_name,
-                                no_part_clone,
-                                ignore_errors_clone,
-                                concurrent_fragments_clone,
-                                output_path_clone,
-                                format_clone,
-                            )
-                            .await;
-
-                            let status = match result {
-                                Ok(path) => {
-                                    if path.contains("Déjà téléchargé") {
-                                        "already_downloaded"
-                                    } else if path == "server issue" {
-                                        "server_error"
-                                    } else if path == "url not found or expired" {
-                                        "not_found"
-                                    } else if path == "cnx error" {
-                                        "connection_error"
-                                    } else {
-                                        "success"
-                                    }
-                                }
-                                Err(_) => "error",
-                            };
-
-                            let now_completed = completed_clone.fetch_add(1, Ordering::SeqCst) + 1;
-
-                            let progress = serde_json::json!({
-                                "download_id": download_id_thread,
-                                "url": url,
-                                "status": status,
-                                "completed": now_completed,
-                                "total": total_videos
-                            });
-
-                            let _ = handle_clone.emit("download-progress", progress);
-                        });
-                    });
-
-                    thread_handles.push(thread_handle);
-                }
-
-                for thread_handle in thread_handles {
-                    let _ = thread_handle.join();
-                }
-
-                if completed_atomic.load(Ordering::SeqCst) < total_videos {
-                    thread::sleep(Duration::from_millis(500));
-                }
-            }
-
-            let final_event = serde_json::json!({
-                "download_id": download_id_clone,
-                "status": "completed",
-                "completed": completed_atomic.load(Ordering::SeqCst),
-                "total": total_videos
-            });
-
-            let _ = handle_thread.emit("download-complete", final_event);
-            println!(
-                "[{}] Téléchargement terminé: {}/{}",
-                download_id_clone,
-                completed_atomic.load(Ordering::SeqCst),
-                total_videos
-            );
-        });
-    });
-
-    Ok(download_id)
-}
 // -------------------------------------------------------------------------------------
-// 2-1) Version ULTRA-LÉGÈRE (arrière-plan) mais il attend la fin en renvoie le résultat
+// 1) Version ULTRA-LÉGÈRE (arrière-plan) mais il attend la fin en renvoie le résultat
 // -------------------------------------------------------------------------------------
 
 #[command]
@@ -430,18 +182,19 @@ pub async fn start_multi_download_background_await(
 
                                 let mut files = downloaded_files_thread.lock().unwrap();
                                 files.push(file_name);
+
+                                let payload = serde_json::json!({
+                                    "id": download_id_thread, 
+                                    "url": url,
+                                    "video_name": video_name,
+                                    "final_path": path,
+                                    "status": "success"
+                                });
+                                let _ = handle_clone.emit("download-complete-single", payload);
                             }
 
                             completed_clone.fetch_add(1, Ordering::SeqCst);
 
-                            let progress = serde_json::json!({
-                                "download_id": download_id_thread,
-                                "url": url,
-                                "completed": completed_clone.load(Ordering::SeqCst),
-                                "total": total_videos
-                            });
-
-                            let _ = handle_clone.emit("download-progress", progress);
                         });
                     });
 
@@ -480,91 +233,20 @@ pub async fn start_multi_download_background_await(
 
 
 
-// -------------------------------------------------
-// 3) Version SIMPLE (futures, sans threads système)
-// -------------------------------------------------
-#[command]
-pub async fn multi_vd_dwl_futures(
-    handle: AppHandle,
-    videos: Vec<VideoDownload>,
-    no_part: Option<bool>,
-    ignore_errors: Option<bool>,
-    concurrent_fragments: Option<String>,
-    output_path: Option<String>,
-    format: Option<String>,
-    max_concurrent: Option<usize>,
-) -> Result<Vec<DownloadResult>, String> {
-    if videos.is_empty() {
-        return Err("Aucune vidéo à télécharger".to_string());
-    }
-
-    let max_concurrent = max_concurrent.unwrap_or(3);
-    let mut results = Vec::new();
-
-    // Traitement par chunks (série) sans spawn pour limiter l'overhead
-    for chunk in videos.chunks(max_concurrent) {
-        let mut futures = Vec::new();
-        for video in chunk {
-            futures.push((
-                video.url.clone(),
-                one_vd_dwl(
-                    handle.clone(),
-                    video.url.clone(),
-                    video.video_name.clone(),
-                    no_part,
-                    ignore_errors,
-                    concurrent_fragments.clone(),
-                    output_path.clone(),
-                    format.clone(), // <--- important: on passe l'argument de la fonction, pas `video.format`
-                ),
-            ));
-        }
-
-        for (url, fut) in futures {
-            let result = fut.await;
-            let download_result = match result {
-                Ok(path) => {
-                    let status = if path.contains("Déjà téléchargé") {
-                        "already_downloaded"
-                    } else if path == "server issue" {
-                        "server_error"
-                    } else if path == "url not found or expired" {
-                        "not_found"
-                    } else if path == "cnx error" {
-                        "connection_error"
-                    } else {
-                        "success"
-                    };
-
-                    DownloadResult {
-                        url,
-                        status: status.to_string(),
-                        path: if status == "success" || status == "already_downloaded" {
-                            Some(path)
-                        } else {
-                            None
-                        },
-                        error: None,
-                    }
-                }
-                Err(error) => DownloadResult {
-                    url,
-                    status: "error".to_string(),
-                    path: None,
-                    error: Some(error),
-                },
-            };
-
-            results.push(download_result);
-        }
-    }
-
-    Ok(results)
+// -------------------------------
+// 2) Téléchargement d'une vidéo avec yt-dlp
+// -------------------------------
+// Ajoutez cette structure pour les événements de complétion
+#[derive(Clone, Serialize)]
+struct CompletionPayload {
+    url: String,
+    status: String, // "success", "error", "already_downloaded", etc.
+    video_name: String,
+    final_path: Option<String>,
+    error_message: Option<String>,
 }
 
-// -------------------------------
-// 4) Téléchargement d'une vidéo avec yt-dlp
-// -------------------------------
+// Modifiez la fonction one_vd_dwl pour émettre l'événement AVANT la fin
 #[command]
 pub async fn one_vd_dwl(
     handle: AppHandle,
@@ -628,12 +310,12 @@ pub async fn one_vd_dwl(
     // Arguments de base optimisés
     args.push("--no-warnings".to_string());
     args.push("--no-playlist".to_string());
-    args.push("--no-progress".to_string());
+    args.push("--newline".to_string());
     args.push("--no-overwrites".to_string());
     args.push("--verbose".to_string());
     args.push("--restrict-filenames".to_string());
-    args.push("--no-mtime".to_string()); // Évite les problèmes de timestamp
-    args.push("--embed-metadata".to_string()); // Métadonnées dans le fichier
+    args.push("--no-mtime".to_string());
+    args.push("--embed-metadata".to_string());
     args.push("--socket-timeout".to_string());
     args.push("30".to_string());
     args.push("--retries".to_string());
@@ -650,27 +332,22 @@ pub async fn one_vd_dwl(
 
     if extract_audio {
         args.push("-f".to_string());
-        args.push("bestaudio/best".to_string()); // Plus robuste
+        args.push("bestaudio/best".to_string());
         args.push("--extract-audio".to_string());
         args.push("--audio-format".to_string());
         args.push("mp3".to_string());
         args.push("--audio-quality".to_string());
         args.push("0".to_string());
-
-        // >>> miniature intégrée <<<
         args.push("--embed-thumbnail".to_string());
         args.push("--convert-thumbnails".to_string());
         args.push("jpg".to_string());
-
     } else {
         args.push("-f".to_string());
         args.push("bestvideo+bestaudio[ext=m4a]/bestvideo+bestaudio/best".to_string());
         args.push("--merge-output-format".to_string());
         args.push("mp4".to_string());
-    
     }
 
- // Force l'utilisation du binaire ffmpeg packagé
     args.push("--ffmpeg-location".to_string());
     args.push(
         ffmpeg_path
@@ -681,8 +358,6 @@ pub async fn one_vd_dwl(
     );
     args.push("--fixup".to_string());
     args.push("warn".to_string());
-
-    // Sortie avec template pour parsing plus fiable
     args.push("-o".to_string());
     args.push(output_option.clone());
 
@@ -697,71 +372,203 @@ pub async fn one_vd_dwl(
 
     // ---------- Lancement du process ----------
     #[cfg(target_os = "windows")]
-    let output = Command::new(&yt_dlp_path)
+    let mut child = Command::new(&yt_dlp_path)
         .args(&args)
-        .creation_flags(0x08000000) // CREATE_NO_WINDOW
-        .output()
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .creation_flags(0x08000000)
+        .spawn()
         .map_err(|e| e.to_string())?;
 
     #[cfg(not(target_os = "windows"))]
-    let output = Command::new(&yt_dlp_path)
+    let mut child = Command::new(&yt_dlp_path)
         .args(&args)
-        .output()
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
         .map_err(|e| e.to_string())?;
 
-    let stdout_text = String::from_utf8_lossy(&output.stdout).to_string();
-    let stderr_text = String::from_utf8_lossy(&output.stderr).to_string();
+    let stdout = child.stdout.take().ok_or("Impossible de capturer stdout")?;
+    let stderr = child.stderr.take().ok_or("Impossible de capturer stderr")?;
 
-    // ---------- Traitement des sorties ----------
-    if stdout_text.contains("has already been downloaded") {
-        if let Some(line) = stdout_text
+    let progress_regex = Regex::new(
+        r"\[download\]\s+(\d+\.?\d*)%\s+of\s+~?(\d+\.?\d*)(.*?)\s+at\s+(\d+\.?\d*)(.*?)/s\s+ETA\s+(\d{2}:\d{2})"
+    ).unwrap();
+
+    let mut stdout_output = String::new();
+    let mut last_progress = 0.0;
+
+    let stderr_handle = std::thread::spawn(move || {
+        let mut stderr_lines = String::new();
+        let stderr_reader = BufReader::new(stderr);
+        for line in stderr_reader.lines().flatten() {
+            stderr_lines.push_str(&line);
+            stderr_lines.push('\n');
+        }
+        stderr_lines
+    });
+
+    // Lecture ligne par ligne de stdout
+    let stdout_reader = BufReader::new(stdout);
+    for line in stdout_reader.lines().flatten() {
+        stdout_output.push_str(&line);
+        stdout_output.push('\n');
+
+        if let Some(caps) = progress_regex.captures(&line) {
+            let progress = caps.get(1).and_then(|m| m.as_str().parse::<f64>().ok()).unwrap_or(0.0);
+            last_progress = progress;
+            
+            let total_str = caps.get(2).and_then(|m| m.as_str().parse::<f64>().ok()).unwrap_or(0.0);
+            let unit = caps.get(3).map(|m| m.as_str().trim()).unwrap_or("");
+            let speed_val = caps.get(4).and_then(|m| m.as_str().parse::<f64>().ok()).unwrap_or(0.0);
+            let speed_unit = caps.get(5).map(|m| m.as_str().trim()).unwrap_or("");
+            let eta = caps.get(6).map(|m| m.as_str()).unwrap_or("00:00");
+
+            let total_bytes = convert_to_bytes(total_str, unit);
+            let downloaded_bytes = (total_bytes as f64 * progress / 100.0) as u64;
+            let speed_str = format!("{:.2}{}", speed_val, speed_unit);
+
+            emit_progress(
+                &handle,
+                url.clone(),
+                progress,
+                speed_str,
+                eta.to_string(),
+                downloaded_bytes,
+                total_bytes,
+                video_name.clone(),
+            );
+        }
+    }
+
+    let stderr_output = stderr_handle.join().unwrap_or_default();
+    let status = child.wait().map_err(|e| e.to_string())?;
+
+    // ---------- ÉMISSION DU STATUS FINAL AVANT DE RETOURNER ----------
+    
+    // Helper pour émettre le statut de complétion
+    let emit_completion = |status: &str, path: Option<String>, error: Option<String>| {
+        // Émettre 100% si pas encore fait
+        if last_progress < 100.0 {
+            emit_progress(
+                &handle,
+                url.clone(),
+                100.0,
+                "0KB".to_string(),
+                "00:00".to_string(),
+                0,
+                0,
+                video_name.clone(),
+            );
+        }
+        
+        let payload = CompletionPayload {
+            url: url.clone(),
+            status: status.to_string(),
+            video_name: video_name.clone(),
+            final_path: path.clone(),
+            error_message: error,
+        };
+        let _ = handle.emit("download-complete-single", payload);
+    };
+
+    // Vérification "already downloaded"
+    if stdout_output.contains("has already been downloaded") {
+        if let Some(line) = stdout_output
             .lines()
             .find(|l| l.contains("has already been downloaded"))
         {
             let path = line.replace(" has already been downloaded", "");
-            return Ok(format!("Fichier Déjà téléchargé : {}", path));
+            let full_message = format!("Fichier Déjà téléchargé : {}", path);
+            
+            emit_completion("already_downloaded", Some(path.clone()), None);
+            return Ok(full_message);
         }
     }
 
-    let server_error = stderr_text.contains("HTTP Error 502")
-        || stderr_text.contains("HTTP Error 503")
-        || stderr_text.contains("Got error");
-    let not_found_error = stderr_text.contains("HTTP Error 404")
-        || stderr_text.contains("Not Found");
-    let cnx_error = stderr_text.contains("getaddrinfo failed")
-        || stderr_text.contains("Failed to resolve")
-        || stderr_text.contains("Network");
+    // Détection des erreurs serveur
+    let server_error = stderr_output.contains("HTTP Error 502")
+        || stderr_output.contains("HTTP Error 503")
+        || stderr_output.contains("Got error");
+    
+    let not_found_error = stderr_output.contains("HTTP Error 404")
+        || stderr_output.contains("Not Found");
+    
+    let cnx_error = stderr_output.contains("getaddrinfo failed")
+        || stderr_output.contains("Failed to resolve")
+        || stderr_output.contains("Network");
 
     if server_error {
+        emit_completion("server_error", None, Some("Erreur serveur (502/503)".to_string()));
         return Ok("server issue".to_string());
     } else if not_found_error {
+        emit_completion("not_found", None, Some("URL introuvable ou expirée".to_string()));
         return Ok("url not found or expired".to_string());
     } else if cnx_error {
+        emit_completion("connection_error", None, Some("Erreur de connexion".to_string()));
         return Ok("cnx error".to_string());
     }
 
-    if output.status.success() {
-        let final_path = stdout_text
+    // ---------- SUCCÈS ----------
+    if status.success() {
+        let final_path = stdout_output
             .lines()
             .find(|l| l.contains("[Merger] Merging formats into"))
             .and_then(|l| l.split('"').nth(1))
             .or_else(|| {
-                stdout_text
+                stdout_output
                     .lines()
                     .rev()
                     .find(|l| l.contains("[download] Destination:"))
                     .and_then(|l| l.split_once("Destination: ").map(|(_, p)| p.trim()))
             })
             .or_else(|| {
-                stdout_text
+                stdout_output
                     .lines()
                     .find(|l| l.contains("[ExtractAudio] Destination:"))
                     .and_then(|l| l.split_once("Destination: ").map(|(_, p)| p.trim()))
             })
             .unwrap_or(&output_option);
 
+        emit_completion("success", Some(final_path.to_string()), None);
         Ok(final_path.to_string())
     } else {
-        Err(stderr_text)
+        emit_completion("error", None, Some(stderr_output.clone()));
+        Err(stderr_output)
     }
+}
+
+fn convert_to_bytes(value: f64, unit: &str) -> u64 {
+    let multiplier = match unit.to_uppercase().as_str() {
+        "KIB" => 1024.0,
+        "MIB" => 1024.0 * 1024.0,
+        "GIB" => 1024.0 * 1024.0 * 1024.0,
+        "KB" => 1000.0,
+        "MB" => 1000.0 * 1000.0,
+        "GB" => 1000.0 * 1000.0 * 1000.0,
+        _ => 1.0,
+    };
+    (value * multiplier) as u64
+}
+
+fn emit_progress(
+    handle: &AppHandle, 
+    url: String, 
+    progress: f64, 
+    speed: String, 
+    eta: String, 
+    downloaded_bytes: u64, 
+    total_bytes: u64, 
+    video_name: String
+) {
+    let payload = ProgressPayload {
+        url,
+        progress,
+        speed,
+        eta,
+        downloaded_bytes,
+        total_bytes,
+        video_name,
+    };
+    let _ = handle.emit("download-progress", payload);
 }

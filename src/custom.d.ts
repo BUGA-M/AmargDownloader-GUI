@@ -17,3 +17,8 @@ declare module '*.webp' {
   const value: string;
   export default value;
 }
+
+declare interface String {
+    hashCode(): number;
+}
+

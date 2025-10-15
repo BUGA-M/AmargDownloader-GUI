@@ -515,15 +515,19 @@ function createCustomVideoAlert(videos: VideoData[], title: string = "Downloads 
         emptyState.style.cssText = `
             text-align: center;
             padding: 60px 20px;
-            color: rgba(255, 255, 255, 0.6);
+            font-family: "Orbitron", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 700;
+            font-style: normal;
+            font-size: larger;
         `;
         emptyState.innerHTML = `
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="color: #ff6600; margin-bottom: 16px;">
             <path d="M23 7l-7 5 7 5V7z" stroke="currentColor" stroke-width="2"/>
             <rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
             </svg>
-            <h3 style="color: white; font-size: 18px; margin: 0 0 6px 0;">No videos found</h3>
-            <p style="margin: 0; font-size: 14px; opacity: .8;">Add some videos to get started</p>
+            <h3 id="no-vd-fnd" style="font-size: 18px; margin: 0 0 6px 0;">No videos found</h3>
+            <p id="no-vd-fnd" style="margin: 0; font-size: 14px; opacity: .8;">Add some videos to get started</p>
         `;
         content.appendChild(emptyState);
     } else {

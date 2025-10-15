@@ -128,6 +128,8 @@ export function BtnTheme(): void {
     const keyZone = document.querySelector(".key-zone") as HTMLDivElement;
     const sendKey = document.querySelector(".sendKey") as HTMLDivElement;
 
+    const schedulText = document.querySelector("#no-vd-fnd") as HTMLElement;
+
     if (leftContainer && leftContainerhider && svgDecoratif) {
       //--- leftContainer ---
       leftContainer.style.border = current === "light" ? "1px solid #af4c0f" : "1px solid #383838";
@@ -170,6 +172,9 @@ export function BtnTheme(): void {
 
       //--- sendSvg ---
       sendKey.style.color = current === "light" ? "#000000" : "#ffffff";
+
+      schedulText.style.color = current === "light" ? "#000000" : "#ffffff";
+
 
     }
 

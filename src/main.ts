@@ -23,6 +23,13 @@ import { support } from "./components/Support";
 import { init3DViewer  } from './components/Model3d';
 import {bugaPopup} from "./components/BugaPopup"
 
+import { createDownloadProgressBar } from './components/BarreDwl';
+let progressBar: HTMLElement;
+console.log('DOM Content Loaded - Creating progress bar');
+progressBar =  createDownloadProgressBar();
+console.log('Progress bar created:', progressBar);
+
+
 initSystemTheme()
 BtnTheme()
 
@@ -302,6 +309,35 @@ try {
       console.log("MultiDwlvideosList for Rust:", MultiDwlvideosList.toArrayForRust());
 
       let result;
+
+      if (progressBar) {
+        // Use the component's public show() so it restores position and constrains to viewport
+        try {
+          (progressBar as any).show();
+        } catch (e) {
+          // Fallback: ensure it's visible
+          progressBar.style.display = 'block';
+          progressBar.style.opacity = '1';
+        }
+
+        // Mettre à jour avec un état initial (selector updated to match BarreDwl)
+        const title = progressBar.querySelector('.main-title') as HTMLElement;
+        const progressFill = progressBar.querySelector('.progress-bar-fill') as HTMLElement;
+        const progressInfo = progressBar.querySelector('.progress-info') as HTMLElement;
+
+        if (title) {
+          if (get_DWL_Type() === "list") {
+            title.textContent = `Downloading ${MultiDwlvideosList.toArray().length} videos...`;
+          } else {
+            title.textContent = videoName || "Starting download...";
+          }
+        }
+        if (progressFill) progressFill.style.width = '0%';
+        if (progressInfo) progressInfo.innerHTML = '<span>0% • Initializing...</span><span>Starting download</span>';
+
+        console.log('🚀 Progress bar shown - invoking Rust function');
+      }
+
       // Choisir la fonction à appeler en fonction du type de téléchargement
       if ( get_DWL_Type() === "list"){
         console.log("Starting multi-video download with params:", paramsmultiVid);
@@ -418,7 +454,9 @@ try {
       
     } catch (error: unknown) {
       console.error("Erreur lors du téléchargement:", error);
-      
+      if (progressBar) {
+        progressBar.style.display = 'none';
+      }
 
       customAlert(
         {

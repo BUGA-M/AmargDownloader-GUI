@@ -57,7 +57,7 @@ export function customAlert(
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
+    z-index: 10001;
     cursor: default;
     animation: overlayFadeIn 0.3s ease-out;
   `;
