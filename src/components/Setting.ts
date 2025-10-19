@@ -60,7 +60,7 @@ export function openSettingsModal(): void {
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 9999;
+        z-index: 99999;
         opacity: 0;
         transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     `;

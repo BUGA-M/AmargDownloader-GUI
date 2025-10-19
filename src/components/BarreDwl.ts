@@ -123,6 +123,7 @@ export function createDownloadProgressBar() {
         downloads: new Map<string, DownloadItem>(),
         currentDownloadId: null as string | null,
         isExpanded: false,
+        isMinimized: false,
         isDragging: false,
         dragOffsetX: 0,
         dragOffsetY: 0,
@@ -138,7 +139,7 @@ export function createDownloadProgressBar() {
 
     // ========== CRÉATION DU CONTAINER ===========
     const container = createContainer(isDark);
-    const { header, mainProgressFill, progressText, mainTitle, downloadList, expandBtn, closeBtn } = 
+    const { header, mainProgressFill, progressText, mainTitle, downloadList, expandBtn, closeBtn, minimizeBtn, minimizedBar } = 
         createUIElements(container, isDark);
 
     // ========== FONCTIONS DE MISE À JOUR ===========
@@ -152,12 +153,17 @@ export function createDownloadProgressBar() {
         mainProgressFill.style.width = `${progress}%`;
         
         if (total === 0) {
-            progressText.textContent = 'Aucun téléchargement';
+            progressText.textContent = 'No downloads';
             progressText.style.color = isDark ? "#ffffff" : "#1a1a1a";
-            mainTitle.textContent = 'En attente...';
+            mainTitle.textContent = 'Waiting...';
             mainTitle.style.color = isDark ? "#ffffff" : "#1a1a1a";
+            // update minimized box: spinner hidden, counter 0/0
+            const spinnerEl = container.querySelector('.mini-spinner') as HTMLElement | null;
+            const counterEl = container.querySelector('.mini-counter') as HTMLElement | null;
+            if (spinnerEl) spinnerEl.style.display = 'none';
+            if (counterEl) counterEl.textContent = '0/0';
         } else {
-            progressText.textContent = `${completed}/${total} terminés`;
+            progressText.textContent = `${completed}/${total} completed`;
             
              const downloadingCount = Array.from(state.downloads.values())
             .filter(d => d.status === 'downloading').length;
@@ -168,19 +174,37 @@ export function createDownloadProgressBar() {
                 //mainTitle.textContent = `Downloading`;
                 mainTitle.style.color = isDark ? "#ffffff" : "#1a1a1a";
             } else if (queuedCount > 0) {
-                mainTitle.textContent = `${queuedCount} Waiting`;
+                mainTitle.textContent = `${queuedCount} waiting`;
                 mainTitle.style.color = isDark ? "#94a3b8" : "#64748b";
             }
 
             // Mettre à jour le nom du fichier
         const fileNameEl = container.querySelector('.itemHeader');
-        if (fileNameEl) {
-            // Trouver le téléchargement en cours
-            const currentDownload = Array.from(state.downloads.values())
-                .find(d => d.status === 'downloading');
-            
-            fileNameEl.textContent = currentDownload ? currentDownload.video_name : 'En attente...';
-        }
+    const currentDownload = Array.from(state.downloads.values()).find(d => d.status === 'downloading');
+    if (fileNameEl) fileNameEl.textContent = currentDownload ? currentDownload.video_name : 'Waiting...';
+    const counterElA = container.querySelector('.mini-counter') as HTMLElement | null;
+    const spinnerElA = container.querySelector('.mini-spinner') as HTMLElement | null;
+    const completedA = Array.from(state.downloads.values()).filter(d => d.status === 'completed').length;
+    const totalA = state.downloads.size;
+    if (counterElA) counterElA.textContent = `${completedA}/${totalA}`;
+    if (spinnerElA) spinnerElA.style.display = Array.from(state.downloads.values()).some(d => d.status === 'downloading') ? 'block' : 'none';
+
+            // Update minimized box: counter shows completed/total
+            const counterEl2 = container.querySelector('.mini-counter') as HTMLElement | null;
+            const downloading = Array.from(state.downloads.values()).some(d => d.status === 'downloading');
+            const anyError = Array.from(state.downloads.values()).some(d => d.status === 'error');
+            if (counterEl2) counterEl2.textContent = `${completed}/${total}`;
+
+            // Priority: any error -> show error X immediately. Otherwise if downloading -> spinner. If all completed -> success. Else hide.
+            if (anyError) {
+                setMinimizedState(container, 'error', isDark);
+            } else if (downloading) {
+                setMinimizedState(container, 'spinner', isDark);
+            } else if (completed === total && total > 0) {
+                setMinimizedState(container, 'success', isDark);
+            } else {
+                setMinimizedState(container, 'hidden', isDark);
+            }
 
         }
     };
@@ -244,6 +268,8 @@ export function createDownloadProgressBar() {
         }
 
         show();
+        // New download started: show spinner in minimized bar
+        setMinimizedState(container, 'spinner', isDark);
         updateOverallProgress();
         updateDownloadList();
     });
@@ -284,20 +310,40 @@ export function createDownloadProgressBar() {
             
             // Mise à jour du texte selon les résultats
             if (errorCount === 0) {
-                progressText.textContent = `✅ ${successCount}/${state.downloads.size} réussis`;
-                progressText.style.color = isDark ? "#4ade80" : "#16a34a";
-                mainTitle.textContent = "Tous les téléchargements terminés !";
+                progressText.textContent = `✅ ${successCount}/${state.downloads.size} succeeded`;
+                //progressText.style.color = isDark ? "#4ade80" : "#16a34a";
+                mainTitle.textContent = "All downloads completed!";
                 //mainTitle.style.color = isDark ? "#4ade80" : "#16a34a";
             } else if (successCount === 0) {
-                progressText.textContent = `❌ ${errorCount}/${state.downloads.size} échoués`;
+                progressText.textContent = `❌ ${errorCount}/${state.downloads.size} failed`;
                 progressText.style.color = isDark ? "#f87171" : "#dc2626";
-                mainTitle.textContent = "Échec des téléchargements";
+                mainTitle.textContent = "Downloads failed";
                 //mainTitle.style.color = isDark ? "#f87171" : "#dc2626";
             } else {
-                progressText.textContent = `⚠️ ${successCount} réussis, ${errorCount} échoués`;
+                progressText.textContent = `⚠️ ${successCount} succeeded, ${errorCount} failed`;
                 progressText.style.color = isDark ? "#fbbf24" : "#f59e0b";
-                mainTitle.textContent = "Téléchargements terminés avec erreurs";
+                mainTitle.textContent = "Downloads completed with errors";
                 //mainTitle.style.color = isDark ? "#fbbf24" : "#f59e0b";
+            }
+
+            // update minimized box: counter and show appropriate badge/spinner
+            const counterEl = container.querySelector('.mini-counter') as HTMLElement | null;
+            const completedNow = Array.from(state.downloads.values()).filter(d => d.status === 'completed').length;
+            const totalNow = state.downloads.size;
+            if (counterEl) counterEl.textContent = `${completedNow}/${totalNow}`;
+            const allDone = Array.from(state.downloads.values()).every(d => d.status === 'completed' || d.status === 'error');
+            const anyErrorNow = Array.from(state.downloads.values()).some(d => d.status === 'error');
+            const downloadingNow = Array.from(state.downloads.values()).some(d => d.status === 'downloading');
+
+            // If any error occurs, show error immediately. When all done, show success if no errors.
+            if (anyErrorNow) {
+                setMinimizedState(container, 'error', isDark);
+            } else if (downloadingNow) {
+                setMinimizedState(container, 'spinner', isDark);
+            } else if (allDone) {
+                setMinimizedState(container, 'success', isDark);
+            } else {
+                setMinimizedState(container, 'hidden', isDark);
             }
 
             // If success and not yet counted, mark as counted (no global persistence)
@@ -329,23 +375,31 @@ export function createDownloadProgressBar() {
         
         // Mise à jour du texte selon les résultats
         if (errorCount === 0) {
-            progressText.textContent = `✅ ${successCount}/${state.downloads.size} réussis`;
-            progressText.style.color = isDark ? "#4ade80" : "#16a34a";
-            mainTitle.textContent = "Tous les téléchargements terminés !";
+            progressText.textContent = `✅ ${successCount}/${state.downloads.size} succeeded`;
+            //progressText.style.color = isDark ? "#4ade80" : "#16a34a";
+            mainTitle.textContent = "All downloads completed!";
             //mainTitle.style.color = isDark ? "#4ade80" : "#16a34a";
         } else if (successCount === 0) {
-            progressText.textContent = `❌ ${errorCount}/${state.downloads.size} échoués`;
+            progressText.textContent = `❌ ${errorCount}/${state.downloads.size} failed`;
             progressText.style.color = isDark ? "#f87171" : "#dc2626";
-            mainTitle.textContent = "Échec des téléchargements";
+            mainTitle.textContent = "Downloads failed";
             //mainTitle.style.color = isDark ? "#f87171" : "#dc2626";
         } else {
-            progressText.textContent = `⚠️ ${successCount} réussis, ${errorCount} échoués`;
+            progressText.textContent = `⚠️ ${successCount} succeeded, ${errorCount} failed`;
             progressText.style.color = isDark ? "#fbbf24" : "#f59e0b";
-            mainTitle.textContent = "Téléchargements terminés avec erreurs";
+            mainTitle.textContent = "Downloads completed with errors";
             //mainTitle.style.color = isDark ? "#fbbf24" : "#f59e0b";
         }
         
         mainProgressFill.style.width = '100%';
+        // update minimized box: final counter and show badge (success or error)
+        const counterEl2 = container.querySelector('.mini-counter') as HTMLElement | null;
+        const completed2 = Array.from(state.downloads.values()).filter(d => d.status === 'completed').length;
+        const total2 = state.downloads.size;
+        if (counterEl2) counterEl2.textContent = `${completed2}/${total2}`;
+        const anyError = Array.from(state.downloads.values()).some(d => d.status === 'error');
+        if (anyError) setMinimizedState(container, 'error', isDark);
+        else setMinimizedState(container, 'success', isDark);
         updateDownloadList();
         
         // Auto-fermeture après 8 secondes si tout est terminé
@@ -362,7 +416,7 @@ export function createDownloadProgressBar() {
 
     // ========== GESTION DES INTERACTIONS ===========
 
-    expandBtn.addEventListener('click', (e) => {
+    expandBtn.addEventListener('click', (e: MouseEvent) => {
         e.stopPropagation();
         state.isExpanded = !state.isExpanded;
         
@@ -370,13 +424,41 @@ export function createDownloadProgressBar() {
         expandBtn.style.transform = state.isExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
     });
 
-    closeBtn.addEventListener('click', (e) => {
+    // Minimize to a small bar
+    minimizeBtn.addEventListener('click', (e: MouseEvent) => {
+        e.stopPropagation();
+        state.isMinimized = true;
+        // hide the detailed header/list and show minimized bar
+        header.style.display = 'none';
+        downloadList.style.display = 'none';
+        minimizedBar.style.display = 'flex';
+        // ensure container keeps same position/size behavior
+        container.style.width = '260px';
+        container.style.borderRadius = '12px';
+    });
+
+    // Double-clicking minimized bar restores full UI
+    minimizedBar.addEventListener('dblclick', (e: MouseEvent) => {
+        e.stopPropagation();
+        state.isMinimized = false;
+        header.style.display = '';
+        downloadList.style.display = '';
+        minimizedBar.style.display = 'none';
+        container.style.width = '420px';
+        // keep expanded state as before
+        ensureInViewport();
+    });
+
+    closeBtn.addEventListener('click', (e: MouseEvent) => {
         e.stopPropagation();
         hide();
     });
 
     // Styles au survol
-    [expandBtn, closeBtn].forEach(btn => {
+    [expandBtn, minimizeBtn, closeBtn].forEach((btn: HTMLElement) => {
+        const savedTheme = window.localStorage.getItem("theme");
+        const isDark = savedTheme?.trim() !== "light";
+
         btn.onmouseenter = () => {
             btn.style.background = isDark ? "rgba(255, 64, 0, 0.15)" : "rgba(255, 64, 0, 0.1)";
             btn.style.color = "#ff4000";
@@ -385,6 +467,9 @@ export function createDownloadProgressBar() {
         };
         
         btn.onmouseleave = () => {
+            const savedTheme = window.localStorage.getItem("theme");
+            const isDark = savedTheme?.trim() !== "light";
+            
             btn.style.background = isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)";
             btn.style.color = isDark ? "#999" : "#666";
             btn.style.transform = btn === expandBtn && state.isExpanded ? 
@@ -393,17 +478,31 @@ export function createDownloadProgressBar() {
     });
 
     // ========== DRAG & DROP ===========
-    const _cleanupDrag = setupDragAndDrop(container, header, state, isDark);
+    const _cleanupDrag = setupDragAndDrop(container, [header, minimizedBar], state, isDark);
 
     // ========== FONCTIONS SHOW/HIDE ===========
 
     const show = () => {
         container.style.display = 'block';
         restorePosition();
+        
+        // Réinitialiser le badge et afficher le spinner pour un nouveau téléchargement
+    // show spinner when showing UI (assume new or ongoing downloads)
+    setMinimizedState(container, 'spinner', isDark);
+        
         // ensure it's visible after layout settles
         setTimeout(() => {
             container.style.opacity = '1';
             container.style.transform = 'translateY(0) scale(1)';
+            // if minimized, show compact bar instead
+            if (state.isMinimized) {
+                const headerEl = container.querySelector('.header-dwl-barre') as HTMLElement | null;
+                const downloadListEl = container.querySelector('.download-list') as HTMLElement | null;
+                const minimizedEl = container.querySelector('.minimized-bar') as HTMLElement | null;
+                if (headerEl) headerEl.style.display = 'none';
+                if (downloadListEl) downloadListEl.style.display = 'none';
+                if (minimizedEl) minimizedEl.style.display = 'flex';
+            }
             ensureInViewport();
         }, 10);
     };
@@ -414,6 +513,8 @@ export function createDownloadProgressBar() {
         setTimeout(() => {
             container.style.display = 'none';
             state.downloads.clear();
+            // also reset minimized state
+            state.isMinimized = false;
             updateOverallProgress();
         }, 400);
     };
@@ -518,9 +619,35 @@ export function createDownloadProgressBar() {
 
     document.body.appendChild(container);
     
+    // Méthode pour réinitialiser complètement l'état pour un nouveau téléchargement
+    const reset = () => {
+        // Vider la liste des téléchargements
+        state.downloads.clear();
+        state.unnamedCounter = 0;
+        state.expectedTotal = 0;
+        
+        // Réinitialiser les éléments visuels
+        mainProgressFill.style.width = '0%';
+        progressText.textContent = 'No downloads';
+        progressText.style.color = isDark ? "#ffffff" : "#1a1a1a";
+        mainTitle.textContent = 'Waiting...';
+        mainTitle.style.color = isDark ? "#ffffff" : "#1a1a1a";
+        
+    // Réinitialiser le spinner et le badge
+    setMinimizedState(container, 'spinner', isDark);
+    const counterEl = container.querySelector('.mini-counter') as HTMLElement | null;
+    if (counterEl) counterEl.textContent = '0/0';
+        
+        // Vider la liste des téléchargements
+        downloadList.innerHTML = '';
+        
+        console.log('🔄 Progress bar reset for new download session');
+    };
+
     // Exposer les méthodes publiques
     (container as any).show = show;
     (container as any).hide = hide;
+    (container as any).reset = reset;
     (container as any).resetPosition = resetPosition;
     // Allow caller to set expected total videos so fallback names show X/Y
     (container as any).setExpectedTotal = (n: number) => {
@@ -543,7 +670,7 @@ function createContainer(isDark: boolean): HTMLDivElement {
     container.className = 'download-progress-container';
     container.style.cssText = `
         position: fixed;
-        bottom: 20px;
+        top: 20px;
         left: 20px;
         width: 420px;
         background: ${isDark 
@@ -569,6 +696,7 @@ function createContainer(isDark: boolean): HTMLDivElement {
 
 function createUIElements(container: HTMLDivElement, isDark: boolean) {
     const header = document.createElement('div');
+    header.classList.add("header-dwl-barre")
     header.style.cssText = `
         padding: 18px;
         border-bottom: 1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)"};
@@ -613,7 +741,7 @@ function createUIElements(container: HTMLDivElement, isDark: boolean) {
         borderRadius: '10px',
         fontSize: '18px',
         flexShrink: 0,
-        color: '#ffffff'   // <- couleur héritée par l’icône
+        color: `${isDark ? "rgba(255, 255, 255, 1)" : "rgba(0, 0, 0, 1)"}`   // <- couleur héritée par l’icône
     });
 
     const titleInfo = document.createElement('div');
@@ -627,7 +755,7 @@ function createUIElements(container: HTMLDivElement, isDark: boolean) {
 
     const mainTitle = document.createElement('div');
     mainTitle.className = 'main-title';
-    mainTitle.textContent = 'En attente...';
+    mainTitle.textContent = 'Waiting...';
     mainTitle.style.cssText = `
         color: ${isDark ? "#ffffff" : "#1a1a1a"};
         font-size: 16px;
@@ -639,7 +767,7 @@ function createUIElements(container: HTMLDivElement, isDark: boolean) {
 
     const progressText = document.createElement('div');
     progressText.className = 'progress-text';
-    progressText.textContent = 'Aucun téléchargement';
+    progressText.textContent = 'No downloads';
     progressText.style.cssText = `
         color: ${isDark ? "#999" : "#666"};
         font-size: 12px;
@@ -660,6 +788,7 @@ function createUIElements(container: HTMLDivElement, isDark: boolean) {
     `;
 
     const expandBtn = document.createElement('button');
+    expandBtn.classList.add("flecheBas")
     expandBtn.innerHTML = '▼';
     expandBtn.style.cssText = `
         width: 32px;
@@ -677,6 +806,7 @@ function createUIElements(container: HTMLDivElement, isDark: boolean) {
     `;
 
     const closeBtn = document.createElement('button');
+    closeBtn.classList.add("closeBtn-barre-dwl")
     closeBtn.innerHTML = '×';
     closeBtn.style.cssText = `
         width: 32px;
@@ -694,12 +824,32 @@ function createUIElements(container: HTMLDivElement, isDark: boolean) {
     `;
 
     controls.appendChild(expandBtn);
+    // Minimize button
+    const minimizeBtn = document.createElement('button');
+    minimizeBtn.classList.add('minimizeBtn-barre-dwl');
+    minimizeBtn.innerHTML = '▁';
+    minimizeBtn.style.cssText = `
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: ${isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)"};
+        border: none;
+        border-radius: 8px;
+        color: ${isDark ? "#999" : "#666"};
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    `;
+    controls.appendChild(minimizeBtn);
     controls.appendChild(closeBtn);
     headerContent.appendChild(titleSection);
     headerContent.appendChild(controls);
 
     // Barre de progression
     const mainProgressBar = document.createElement('div');
+    mainProgressBar.classList.add("mainProgressBar-Dwl")
     mainProgressBar.style.cssText = `
         width: 100%;
         height: 6px;
@@ -735,7 +885,148 @@ function createUIElements(container: HTMLDivElement, isDark: boolean) {
     container.appendChild(header);
     container.appendChild(downloadList);
 
-    return { header, mainProgressFill, progressText, mainTitle, downloadList, expandBtn, closeBtn };
+    // Minimized compact bar (hidden by default) - improved styling
+    const minimizedBar = document.createElement('div');
+    minimizedBar.setAttribute("title","Double-click to restor")
+    minimizedBar.classList.add('minimized-bar');
+    minimizedBar.style.cssText = `
+        display: none;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px;
+        height: 52px;
+        background: ${isDark
+            ? 'linear-gradient(90deg, rgba(36,36,36,0.95), rgba(24,24,24,0.95))'
+            : 'linear-gradient(90deg, rgba(255,255,255,0.98), rgba(248,248,248,0.98))'};
+        border: 1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'};
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        cursor: grab;
+        user-select: none;
+        overflow: hidden;
+    `;
+
+    // Modern compact box: spinner + counter (downloaded/total)
+    const box = document.createElement('div');
+    box.style.cssText = `display:flex; align-items:center; gap:12px; padding:6px 10px; width:100%;`;
+
+    // spinner
+    const spinner = document.createElement('div');
+    spinner.classList.add('mini-spinner');
+    spinner.style.cssText = `
+        width:20px; height:20px; border-radius:50%;
+        border:3px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'};
+        border-top-color: ${isDark ? '#ffb56b' : '#ff6a00'};
+        animation: spin 1s linear infinite;
+        flex:0 0 auto;
+    `;
+
+    // completed badge (hidden by default) - modern check circle
+    const badge = document.createElement('div');
+    badge.classList.add('mini-badge');
+    badge.style.cssText = `
+        width:28px; height:28px; border-radius:8px; display:none; align-items:center; justify-content:center;
+        background: ${isDark ? 'linear-gradient(135deg,#064e3b,#065f46)' : 'linear-gradient(135deg,#e6fffa,#ecfccb)'};
+        color: ${isDark ? '#bbf7d0' : '#065f46'}; flex:0 0 auto;
+        border:  ${isDark ? '1px solid #bbf7d0' : '1px solid #065f46 '}
+    `;
+    badge.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    `;
+
+    // counter (success/total)
+    const counter = document.createElement('div');
+    counter.classList.add('mini-counter');
+    counter.textContent = '0/0';
+    counter.style.cssText = `font-weight:700; color: ${isDark ? '#fff' : '#111'}; font-size:13px;`;
+
+    // small label
+    const label = document.createElement('div');
+    label.classList.add('mini-label');
+    label.textContent = 'downloads';
+    label.style.cssText = `font-size:11px; color: ${isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.6)'};`;
+
+    const rightWrap = document.createElement('div');
+    rightWrap.style.cssText = 'margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:2px;';
+    rightWrap.appendChild(counter);
+    rightWrap.appendChild(label);
+
+    box.appendChild(spinner);
+    box.appendChild(badge);
+    box.appendChild(rightWrap);
+    minimizedBar.appendChild(box);
+
+    // spinner keyframes (inlined using style tag fallback)
+    const styleTag = document.createElement('style');
+    styleTag.textContent = `@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`;
+    minimizedBar.appendChild(styleTag);
+    container.appendChild(minimizedBar);
+
+    return { header, mainProgressFill, progressText, mainTitle, downloadList, expandBtn, closeBtn, minimizeBtn, minimizedBar };
+}
+
+// Helper to control minimized bar state: 'spinner' | 'success' | 'error' | 'hidden'
+function setMinimizedState(container: HTMLElement, state: 'spinner' | 'success' | 'error' | 'hidden', isDark: boolean) {
+    const spinnerEl = container.querySelector('.mini-spinner') as HTMLElement | null;
+    const badgeEl = container.querySelector('.mini-badge') as HTMLElement | null;
+    const counterEl = container.querySelector('.mini-counter') as HTMLElement | null;
+
+    if (!spinnerEl || !badgeEl) return;
+
+    switch (state) {
+        case 'spinner':
+            spinnerEl.style.display = 'block';
+            badgeEl.style.display = 'none';
+            // reset badge colors just in case
+            badgeEl.style.background = isDark ? 'linear-gradient(135deg,#064e3b,#065f46)' : 'linear-gradient(135deg,#e6fffa,#ecfccb)';
+            badgeEl.style.color = isDark ? '#bbf7d0' : '#065f46';
+            badgeEl.style.border = isDark ? '1px solid #bbf7d0' : '1px solid #065f46';
+            break;
+        case 'success':
+            spinnerEl.style.display = 'none';
+            badgeEl.style.display = 'flex';
+            // success coloring
+            badgeEl.style.background = isDark ? 'linear-gradient(135deg,#064e3b,#065f46)' : 'linear-gradient(135deg,#e6fffa,#ecfccb)';
+            badgeEl.style.color = isDark ? '#bbf7d0' : '#065f46';
+            badgeEl.style.border = isDark ? '1px solid #bbf7d0' : '1px solid #065f46';
+            // set check icon
+            badgeEl.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            `;
+            break;
+        case 'error':
+            spinnerEl.style.display = 'none';
+            badgeEl.style.display = 'flex';
+            // error coloring and X icon
+            badgeEl.style.background = isDark ? 'linear-gradient(135deg,#4c0519,#7f1d1d)' : 'linear-gradient(135deg,#fff1f2,#fee2e2)';
+            badgeEl.style.color = isDark ? '#fecaca' : '#991b1b';
+            badgeEl.style.border = isDark ? '1px solid #fecaca' : '1px solid #991b1b';
+            // replace inner SVG with an X if not already
+            badgeEl.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            `;
+            break;
+    case 'hidden':
+        default:
+            spinnerEl.style.display = 'none';
+            badgeEl.style.display = 'none';
+            break;
+    }
+
+    // keep counter untouched
+    if (counterEl && counterEl.textContent == null) counterEl.textContent = '0/0';
+    // expose current mini state to external theme/updater code
+    try {
+        if (badgeEl) badgeEl.setAttribute('data-state', state);
+    } catch (e) {
+        /* ignore */
+    }
 }
 
 function createDownloadItem(download: DownloadItem, isDark: boolean): HTMLElement {
@@ -785,9 +1076,12 @@ function createDownloadItem(download: DownloadItem, isDark: boolean): HTMLElemen
     itemHeader.appendChild(status);
     item.appendChild(itemHeader);
 
+    const progressBar = document.createElement('div');
+    progressBar.classList.add("progressBar-Dwl")
     // Barre de progression (si en cours ou en attente)
     if (download.status === 'downloading' || download.status === 'queued') {
-        const progressBar = document.createElement('div');
+        //const progressBar = document.createElement('div');
+        //progressBar.classList.add("progressBar-Dwl")
         progressBar.style.cssText = `
             width: 100%;
             height: 4px;
@@ -797,6 +1091,7 @@ function createDownloadItem(download: DownloadItem, isDark: boolean): HTMLElemen
         `;
 
         const progressFill = document.createElement('div');
+        progressFill.classList.add("progressFill-Dwl")
         progressFill.style.cssText = `
             width: ${download.progress}%;
             height: 100%;
@@ -811,6 +1106,7 @@ function createDownloadItem(download: DownloadItem, isDark: boolean): HTMLElemen
 
     // Détails
     const details = document.createElement('div');
+    details.classList.add("details-Dwl")
     details.style.cssText = `
         display: flex;
         justify-content: space-between;
@@ -824,9 +1120,11 @@ function createDownloadItem(download: DownloadItem, isDark: boolean): HTMLElemen
     leftInfo.style.cssText = `display: flex; align-items: center; gap: 8px; flex: 1;`;
 
     const percentage = document.createElement('span');
+    percentage.classList.add('pourcentage-dwl')
     percentage.style.cssText = `font-weight: 600; color: ${isDark ? "#fff" : "#333"}; min-width: 30px;`;
 
     const sizeInfo = document.createElement('span');
+    sizeInfo.classList.add('size-dwl')
     sizeInfo.style.cssText = `color: ${isDark ? "#ccc" : "#666"};`;
 
     const rightInfo = document.createElement('div');
@@ -839,6 +1137,7 @@ function createDownloadItem(download: DownloadItem, isDark: boolean): HTMLElemen
     `;
 
     const speedInfo = document.createElement('span');
+    speedInfo.classList.add('speedInfo-dwl')
     speedInfo.style.cssText = `color: ${isDark ? "#ccc" : "#666"}; font-style: italic;`;
 
     const etaInfo = document.createElement('span');
@@ -860,19 +1159,19 @@ function createDownloadItem(download: DownloadItem, isDark: boolean): HTMLElemen
         case 'completed':
             percentage.textContent = '100%';
             sizeInfo.textContent = formatBytes(download.total_bytes);
-            etaInfo.textContent = 'Terminé';
+            etaInfo.textContent = 'Done';
             etaInfo.style.color = isDark ? '#4ade80' : '#16a34a';
             break;
         case 'error':
-            percentage.textContent = 'Échec';
+            percentage.textContent = 'Failed';
             sizeInfo.textContent = formatBytes(download.downloaded_bytes);
-            etaInfo.textContent = 'Erreur';
+            etaInfo.textContent = 'Error';
             etaInfo.style.color = isDark ? '#f87171' : '#dc2626';
             break;
         case 'queued':
             percentage.textContent = '0%';
-            sizeInfo.textContent = 'En attente';
-            etaInfo.textContent = 'En file';
+            sizeInfo.textContent = 'Pending';
+            etaInfo.textContent = 'Queued';
             etaInfo.style.color = isDark ? '#94a3b8' : '#64748b';
             break;
     }
@@ -903,9 +1202,9 @@ function constrainToViewport(x: number, y: number, container: HTMLElement): Posi
 }
 
 function setupDragAndDrop(
-    container: HTMLElement, 
-    header: HTMLElement, 
-    state: any, 
+    container: HTMLElement,
+    handles: HTMLElement | HTMLElement[],
+    state: any,
     _isDark: boolean
 ) {
     let startPosition = { x: 0, y: 0 };
@@ -923,9 +1222,11 @@ function setupDragAndDrop(
         state.dragOffsetX = e.clientX - rect.left;
         state.dragOffsetY = e.clientY - rect.top;
         
-        // Désactiver les transitions pendant le drag
-        container.style.transition = 'none';
-        container.style.cursor = 'grabbing';
+    // Désactiver les transitions pendant le drag
+    container.style.transition = 'none';
+    container.style.cursor = 'grabbing';
+    // update handles cursor if present
+    handleList.forEach(h => h.style.cursor = 'grabbing');
         
         e.preventDefault();
     };
@@ -949,6 +1250,7 @@ function setupDragAndDrop(
         
         state.isDragging = false;
         container.style.cursor = 'grab';
+        handleList.forEach(h => h.style.cursor = 'grab');
         
         // Réactiver les transitions
         container.style.transition = 'all 0.3s ease';
@@ -957,12 +1259,13 @@ function setupDragAndDrop(
         savePosition(container);
     };
 
-    header.addEventListener('mousedown', startDrag);
+    const handleList = Array.isArray(handles) ? handles : [handles];
+    handleList.forEach(h => h.addEventListener('mousedown', startDrag));
     document.addEventListener('mousemove', onDrag);
     document.addEventListener('mouseup', stopDrag);
 
     return () => {
-        header.removeEventListener('mousedown', startDrag);
+        handleList.forEach(h => h.removeEventListener('mousedown', startDrag));
         document.removeEventListener('mousemove', onDrag);
         document.removeEventListener('mouseup', stopDrag);
     };

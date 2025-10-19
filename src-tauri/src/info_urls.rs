@@ -184,8 +184,11 @@ pub async fn get_video_info(
     };
 
     // --- insertion de la nouvelle vidéo ---
-    let next_key = format!("url {}", map.len() + 1);
-    map.insert(next_key, info.clone());
+    // Use the generated UUID as the key to avoid collisions when items are deleted.
+    // Using map.len() + 1 could produce duplicate keys after deletions and overwrite
+    // existing entries (e.g., delete url 2 then add a new entry, next_key may match
+    // an existing "url 3"). Using the video's UUID guarantees uniqueness.
+    map.insert(info.id.clone(), info.clone());
 
     // --- création du dossier si nécessaire ---
     if let Some(parent) = json_path.parent() {

@@ -20,22 +20,6 @@ pub struct VideoDownload {
     pub format: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct DownloadResult {
-    pub url: String,
-    pub status: String,
-    pub path: Option<String>,
-    pub error: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct MultiDownloadProgress {
-    pub total: usize,
-    pub completed: usize,
-    pub current_url: String,
-    pub results: Vec<DownloadResult>,
-}
-
 #[derive(Clone, Serialize)]
 struct ProgressPayload {
     url: String,
@@ -116,7 +100,7 @@ pub async fn start_multi_download_background_await(
 
     let download_id = uuid::Uuid::new_v4().to_string();
     let download_id_clone = download_id.clone();
-    let max_concurrent = max_concurrent.unwrap_or(3);
+    let max_concurrent = max_concurrent.unwrap_or(4);
 
     let completed_atomic = Arc::new(AtomicUsize::new(0));
 

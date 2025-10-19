@@ -404,7 +404,7 @@ function createCustomVideoAlert(videos: VideoData[], title: string = "Downloads 
 
             confirmBox.innerHTML = `
                 <h3 style="margin: 0 0 12px 0; color:${currenTTheme?.trim() === "light" ? "#000000ff" : "#ffffffff"}; font-size: 18px;">Confirmation</h3>
-                <p style="margin: 0 0 24px 0; color: #666; font-size: 14px;">Êtes-vous sûr de vouloir supprimer toutes les vidéos ?</p>
+                <p style="margin: 0 0 24px 0; color: #666; font-size: 14px;">Are you sure you want to delete all videos?</p>
                 <div style="display: flex; gap: 12px; justify-content: center;">
                     <button id="cancelBtn" style="
                         background: #f0f0f0;
@@ -414,7 +414,7 @@ function createCustomVideoAlert(videos: VideoData[], title: string = "Downloads 
                         border-radius: 8px;
                         cursor: pointer;
                         font-weight: 600;
-                    ">Annuler</button>
+                    ">Cancel</button>
                     <button id="confirmBtn" style="
                         background: #ff3b30;
                         color: white;
@@ -423,7 +423,7 @@ function createCustomVideoAlert(videos: VideoData[], title: string = "Downloads 
                         border-radius: 8px;
                         cursor: pointer;
                         font-weight: 600;
-                    ">Supprimer</button>
+                    ">Delete</button>
                 </div>
             `;
 

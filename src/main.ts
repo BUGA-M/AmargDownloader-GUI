@@ -25,9 +25,6 @@ import {bugaPopup} from "./components/BugaPopup"
 
 import { createDownloadProgressBar } from './components/BarreDwl';
 let progressBar: HTMLElement;
-console.log('DOM Content Loaded - Creating progress bar');
-progressBar =  createDownloadProgressBar();
-console.log('Progress bar created:', progressBar);
 
 
 initSystemTheme()
@@ -303,15 +300,25 @@ try {
         ignoreErrors: ignorError ? ignorError === "true" : true,
         concurrentFragments: nb_fragment ,
         outputPath: get_StoredFolder() || "" ,
-        max_concurrent: 3,
+        max_concurrent: 5,
       };
 
       console.log("MultiDwlvideosList for Rust:", MultiDwlvideosList.toArrayForRust());
 
-      let result;
-
+      // IMPORTANT: Créer et afficher la barre de progression AVANT d'invoquer le téléchargement
+      // pour que les listeners soient attachés et puissent recevoir les événements du backend
+      progressBar = getOrCreateProgressBar();
+      
       if (progressBar) {
-        // Use the component's public show() so it restores position and constrains to viewport
+        // Réinitialiser complètement l'état pour un nouveau téléchargement
+        // Cela cache le badge et affiche le spinner
+        try {
+          (progressBar as any).reset();
+        } catch (e) {
+          console.warn('Failed to reset progress bar:', e);
+        }
+        
+        // Afficher la barre de progression
         try {
           (progressBar as any).show();
         } catch (e) {
@@ -320,29 +327,23 @@ try {
           progressBar.style.opacity = '1';
         }
 
-        // Mettre à jour avec un état initial (selector updated to match BarreDwl)
-        const title = progressBar.querySelector('.main-title') as HTMLElement;
-        const progressFill = progressBar.querySelector('.progress-bar-fill') as HTMLElement;
-        const progressInfo = progressBar.querySelector('.progress-info') as HTMLElement;
-
-        if (title) {
-          if (get_DWL_Type() === "list") {
-            title.textContent = `Downloading ${MultiDwlvideosList.toArray().length} videos...`;
-          } else {
-            title.textContent = videoName || "Starting download...";
-          }
-        }
-        if (progressFill) progressFill.style.width = '0%';
-        if (progressInfo) progressInfo.innerHTML = '<span>0% • Initializing...</span><span>Starting download</span>';
-
-        console.log('🚀 Progress bar shown - invoking Rust function');
+        console.log('🚀 Progress bar reset and shown - listeners ready - invoking Rust function');
       }
 
+      // Attendre un court instant pour s'assurer que les listeners sont bien attachés
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      let result;
       // Choisir la fonction à appeler en fonction du type de téléchargement
       if ( get_DWL_Type() === "list"){
         console.log("Starting multi-video download with params:", paramsmultiVid);
+        // Pour le multi-download, définir le nombre attendu de vidéos
+        if (progressBar && typeof (progressBar as any).setExpectedTotal === 'function') {
+          (progressBar as any).setExpectedTotal(MultiDwlvideosList.toArray().length);
+        }
         result = await invoke<string>("multi_vd_dwl_caller", paramsmultiVid);
       }else{
+        console.log("Starting single-video download with params:", paramsOneVid);
         result = await invoke<string>("one_vd_dwl", paramsOneVid) ;
       }
       
@@ -603,3 +604,12 @@ const modelUrl = new URL('./utils/BUGA.glb', import.meta.url).href;
 init3DViewer(container, modelUrl);
 
 bugaPopup();
+
+
+//------------------------------ Barre de telechargement------------------------------------//
+function getOrCreateProgressBar() {
+  if (!progressBar) {     // première fois seulement
+    progressBar = createDownloadProgressBar();
+  }
+  return progressBar;
+}
