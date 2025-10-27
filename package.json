@@ -1,9 +1,9 @@
 {
-  "name": "amarg_dowloader_beta",
+  "name": "amarg_dowloader",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A lightweight and fast Tauri application for downloading videos from the internet, with format management, customizable output folders, and a user-friendly interface.",
-  "author": "BUGA <ggxini@gmail.com>",
+  "author": "BUGA-M <ggxini@gmail.com>",
   "type": "module",
   "scripts": {
     "dev": "vite",
