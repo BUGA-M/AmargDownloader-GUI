@@ -387,7 +387,7 @@ pub async fn one_vd_dwl(
     );
     let stdout = child.stdout.take().ok_or("Impossible de capturer stdout")?;
     let stderr = child.stderr.take().ok_or("Impossible de capturer stderr")?;
-    
+
     let progress_regex = Regex::new(
         //old regex
         //r"\[download\]\s+(\d+\.?\d*)%\s+of\s+~?\s*(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)?\s+at\s+(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)?/s\s+ETA\s+(\d{2}:\d{2})"
@@ -398,10 +398,10 @@ pub async fn one_vd_dwl(
 
     let mut global_total_bytes: Option<u64> = None;
     let mut stdout_output: String = String::new();
-    let mut last_progress: f64 = 0.0; // ajouter [mut] n cas de modification 
+    let mut last_progress: f64 = 0.0; // ajouter [mut] n cas de modification
     let mut size_locked: bool = false;
-    let mut first_downloaded: Option<u64> = None;  
-    let mut first_total:     Option<u64> = None;
+    let mut first_downloaded: Option<u64> = None;
+    let mut first_total: Option<u64> = None;
 
     let stderr_handle = std::thread::spawn(move || {
         let mut stderr_lines = String::new();
@@ -416,7 +416,7 @@ pub async fn one_vd_dwl(
     // Lecture ligne par ligne de stdout
     let stdout_reader = BufReader::new(stdout);
     for line in stdout_reader.lines().flatten() {
-        warn!("{:?}",&line);
+        warn!("{:?}", &line);
 
         stdout_output.push_str(&line);
         stdout_output.push('\n');
@@ -429,45 +429,46 @@ pub async fn one_vd_dwl(
                 .unwrap_or(0.0);
 
             last_progress = progress;
-            
+
             let total_str = caps
                 .get(2)
                 .and_then(|m| m.as_str().parse::<f64>().ok())
                 .unwrap_or(0.0);
-            
+
             // IMPORTANT : Capturer l'unité à l'index 3 maintenant
             let unit = caps.get(3).map(|m| m.as_str().trim()).unwrap_or("MiB");
-            
+
             let speed_val = caps
                 .get(4)
                 .and_then(|m| m.as_str().parse::<f64>().ok())
                 .unwrap_or(0.0);
-            
+
             // IMPORTANT : Capturer l'unité de vitesse à l'index 5
             let speed_unit = caps.get(5).map(|m| m.as_str().trim()).unwrap_or("MiB");
-            
+
             let eta = caps.get(6).map(|m| m.as_str()).unwrap_or("00:00");
-            
+
             //old fixage  de la taille
             //if global_total_bytes.is_none() {
             //    let calculated_total = convert_to_bytes(total_str, unit);
             //    if calculated_total > 0 {
             //        global_total_bytes = Some(calculated_total);
-            //        info!("📦 [TOTAL SIZE LOCKED] {} bytes ({:.2} MB)", 
-            //            calculated_total, 
+            //        info!("📦 [TOTAL SIZE LOCKED] {} bytes ({:.2} MB)",
+            //            calculated_total,
             //            calculated_total as f64 / (1024.0 * 1024.0));
             //    }
             //}
 
-            //New fixage  de la taille 
+            //New fixage  de la taille
             if total_str > 0.1 {
                 let calculated_total = convert_to_bytes(total_str, unit);
-                
+
                 if calculated_total > 100 {
                     // Si progression < 20% → TOUJOURS mettre à jour
                     if progress < 20.0 {
                         global_total_bytes = Some(calculated_total);
-                        info!("📊 [SIZE UPDATE] {:.2} MB ({:.1}%) [Not locked yet]", 
+                        info!(
+                            "📊 [SIZE UPDATE] {:.2} MB ({:.1}%) [Not locked yet]",
                             calculated_total as f64 / (1024.0 * 1024.0),
                             progress
                         );
@@ -476,7 +477,8 @@ pub async fn one_vd_dwl(
                     else if !size_locked {
                         global_total_bytes = Some(calculated_total);
                         size_locked = true; // ✅ VERROUILLER ICI
-                        info!("🔒🔒🔒 [SIZE LOCKED] {:.2} MB at {:.1}% 🔒🔒🔒", 
+                        info!(
+                            "🔒🔒🔒 [SIZE LOCKED] {:.2} MB at {:.1}% 🔒🔒🔒",
                             calculated_total as f64 / (1024.0 * 1024.0),
                             progress
                         );
@@ -484,7 +486,7 @@ pub async fn one_vd_dwl(
                     // Si déjà verrouillé → NE RIEN FAIRE (pas de else, pas d'update)
                 }
             }
-            let total_bytes =  global_total_bytes.unwrap_or(0);
+            let total_bytes = global_total_bytes.unwrap_or(0);
             let downloaded_bytes = if total_bytes > 0 {
                 (total_bytes as f64 * progress / 100.0) as u64
             } else {
@@ -493,7 +495,7 @@ pub async fn one_vd_dwl(
 
             if first_downloaded.is_none() {
                 first_downloaded = Some(downloaded_bytes);
-                first_total      = Some(total_bytes);
+                first_total = Some(total_bytes);
             }
 
             let speed_str = format!("{:.2}{}", speed_val, speed_unit);
@@ -509,14 +511,12 @@ pub async fn one_vd_dwl(
                 total_bytes,
                 video_name.clone(),
             );
-            
-            
-            
+
             // Log pour debug (à retirer en production)
-            info!("[PROGRESS] {}% | {}/{} bytes", 
-              progress, 
-              downloaded_bytes, 
-              total_bytes);
+            info!(
+                "[PROGRESS] {}% | {}/{} bytes",
+                progress, downloaded_bytes, total_bytes
+            );
         }
     }
 
@@ -535,8 +535,8 @@ pub async fn one_vd_dwl(
                 100.0,
                 "0KB".to_string(),
                 "00:00".to_string(),
-                first_downloaded.unwrap_or(0),   // ✅ toute 1ᵉʳ valeur
-                first_total.unwrap_or(0), 
+                first_downloaded.unwrap_or(0), // ✅ toute 1ᵉʳ valeur
+                first_total.unwrap_or(0),
                 video_name.clone(),
             );
         }
@@ -650,7 +650,7 @@ fn emit_progress(
     eta: String,
     downloaded_bytes: u64,
     total_bytes: u64,
-    video_name: String
+    video_name: String,
 ) {
     let payload = ProgressPayload {
         url,
@@ -661,12 +661,12 @@ fn emit_progress(
         total_bytes,
         video_name,
     };
-    info!("[emit progress] {:?} ",payload.url);
-    info!("[emit progress] {:?} ",payload.progress);
-    info!("[emit progress] {:?} ",payload.speed);
-    info!("[emit progress] {:?} ",payload.eta);
-    info!("[emit progress] {:?} ",payload.downloaded_bytes);
-    info!("[emit progress] {:?} ",payload.total_bytes);
-    info!("[emit progress] {:?} ",payload.video_name);
+    info!("[emit progress] {:?} ", payload.url);
+    info!("[emit progress] {:?} ", payload.progress);
+    info!("[emit progress] {:?} ", payload.speed);
+    info!("[emit progress] {:?} ", payload.eta);
+    info!("[emit progress] {:?} ", payload.downloaded_bytes);
+    info!("[emit progress] {:?} ", payload.total_bytes);
+    info!("[emit progress] {:?} ", payload.video_name);
     let _ = handle.emit("download-progress", payload);
 }

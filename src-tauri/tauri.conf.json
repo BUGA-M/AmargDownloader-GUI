@@ -64,13 +64,31 @@
     ],
     "publisher": "BUGA-M",
     "copyright": "Copyright © 2025 AMARG. All rights reserved.",
-    "category": "Multimedia",
+    "category": "Video",
     "shortDescription": "Fast and modern video downloader.",
     "longDescription": "AMARG Downloader is a lightweight, secure, and efficient app for downloading videos with advanced customization and format options.",
     "windows": {
       "digestAlgorithm": "sha256",
-      "timestampUrl": null
+      "timestampUrl": null,
+      "webviewInstallMode": {
+      "type": "offlineInstaller"
+      }
     }
   },
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "active": true,
+      "dialog": false,
+      "check": false,
+      "download": false,
+      "install": false,
+      "url": null
+    }, 
+    "log": {},
+    "opener": {},
+    "dialog": {},
+    "fs": {},
+    "autostart": {},
+    "single-instance": {}
+  }
 }

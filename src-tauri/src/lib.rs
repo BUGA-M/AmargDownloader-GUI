@@ -17,8 +17,8 @@ use tauri_plugin_log::{Target, TargetKind};
 use tokio::time::{sleep, Duration};
 use webbrowser;
 
-mod info_urls;
 mod downloads;
+mod info_urls;
 
 #[command]
 async fn is_startup_enabled(app: tauri::AppHandle) -> Result<bool, String> {
@@ -96,7 +96,6 @@ async fn open_link(url: String) -> Result<(), String> {
     Ok(())
 }
 
-
 /// 2️⃣ Telecharge une vidéo avec yt-dlp
 #[command]
 async fn one_vd_dwl_caller(
@@ -148,10 +147,17 @@ async fn multi_vd_dwl_caller(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::new().targets([
-            Target::new(TargetKind::Stdout),
-            Target::new(TargetKind::LogDir { file_name: Some("Downloads".to_string()) })
-        ]).build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    Target::new(TargetKind::Stdout),
+                    Target::new(TargetKind::LogDir {
+                        file_name: Some("Downloads".to_string()),
+                    }),
+                ])
+                .build(),
+        )
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             // On ignore complètement les arguments
