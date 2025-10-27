@@ -277,7 +277,7 @@ try {
     
     // désactiver interactions
     downloadButtonEl.style.pointerEvents = "none";
-    downloadButtonEl.textContent = "Téléchargement en cours...";
+    downloadButtonEl.textContent = "Start Bash Download ( 1 )";
 
     const nb_fragment: string | null = localStorage.getItem("Fragments") || ""
     const noPart: string | null = localStorage.getItem("noPart") || "";
@@ -300,7 +300,7 @@ try {
         ignoreErrors: ignorError ? ignorError === "true" : true,
         concurrentFragments: nb_fragment ,
         outputPath: get_StoredFolder() || "" ,
-        max_concurrent: 5,
+        max_concurrent: 3,
       };
 
       console.log("MultiDwlvideosList for Rust:", MultiDwlvideosList.toArrayForRust());
@@ -344,6 +344,9 @@ try {
         result = await invoke<string>("multi_vd_dwl_caller", paramsmultiVid);
       }else{
         console.log("Starting single-video download with params:", paramsOneVid);
+        if (progressBar && typeof (progressBar as any).setExpectedTotal === 'function') {
+          (progressBar as any).setExpectedTotal("1");
+        }
         result = await invoke<string>("one_vd_dwl", paramsOneVid) ;
       }
       

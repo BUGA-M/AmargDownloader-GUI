@@ -2,7 +2,8 @@ import { invoke } from '@tauri-apps/api/core';
 import {verifieStartup } from "../utils/init"
 
 export async function openAppSettingsModal(){
-    const savedTheme = localStorage.getItem("theme");
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
     await verifieStartup()
     //------------------------ Internal Functions ------------------------------------//
 

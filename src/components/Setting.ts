@@ -1,7 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 
 export function openSettingsModal(): void {
-    const savedTheme = localStorage.getItem("theme");
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
 
     //------------------------ Internal Functions ------------------------------------//
 

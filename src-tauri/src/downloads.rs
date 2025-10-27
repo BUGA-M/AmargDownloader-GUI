@@ -1,14 +1,16 @@
 use serde::{Deserialize, Serialize};
 use serde_json; // for json! macro payloads
-use std::process::{Command,Stdio};
-use std::sync::{Arc, Mutex};
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use tauri::{command, AppHandle, Emitter, Manager};
 
-use std::io::{BufRead, BufReader};
 use regex::Regex;
+use std::io::{BufRead, BufReader};
+
+use log::{info, warn};
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt; // for creation_flags
@@ -48,7 +50,7 @@ const FFMPEG_BIN: &str = "ffmpeg";
 fn resolve_resource_bin(handle: &AppHandle, bin: &str) -> Result<std::path::PathBuf, String> {
     // Tentative du dossier resources (après bundling)
     if let Ok(dir) = handle.path().resource_dir() {
-        let path = dir.join("resources") .join(bin); //  enlever .join("resources") si ca ne marche pas
+        let path = dir.join("resources").join(bin); //  enlever .join("resources") si ca ne marche pas
         if path.exists() {
             return Ok(path);
         }
@@ -59,16 +61,18 @@ fn resolve_resource_bin(handle: &AppHandle, bin: &str) -> Result<std::path::Path
         .map_err(|e| format!("Impossible d'obtenir current_exe: {e}"))?
         .parent()
         .unwrap()
-        .join("resources") 
+        .join("resources")
         .join(bin);
 
     if dev_path.exists() {
         return Ok(dev_path);
     }
 
-    Err(format!("{} introuvable ni dans resources ni à {:?}", bin, dev_path))
+    Err(format!(
+        "{} introuvable ni dans resources ni à {:?}",
+        bin, dev_path
+    ))
 }
-
 
 /// Fallback dossier pour la sortie si vous n'avez pas votre helper `get_amarg_folder_path()`
 fn default_output_dir() -> Result<String, String> {
@@ -97,10 +101,10 @@ pub async fn start_multi_download_background_await(
     if videos.is_empty() {
         return Err("Aucune vidéo à télécharger".to_string());
     }
-
+    info!("[start multi dwl appelee]");
     let download_id = uuid::Uuid::new_v4().to_string();
     let download_id_clone = download_id.clone();
-    let max_concurrent = max_concurrent.unwrap_or(4);
+    let max_concurrent = max_concurrent.unwrap_or(3);
 
     let completed_atomic = Arc::new(AtomicUsize::new(0));
 
@@ -168,7 +172,7 @@ pub async fn start_multi_download_background_await(
                                 files.push(file_name);
 
                                 let payload = serde_json::json!({
-                                    "id": download_id_thread, 
+                                    "id": download_id_thread,
                                     "url": url,
                                     "video_name": video_name,
                                     "final_path": path,
@@ -178,7 +182,6 @@ pub async fn start_multi_download_background_await(
                             }
 
                             completed_clone.fetch_add(1, Ordering::SeqCst);
-
                         });
                     });
 
@@ -209,13 +212,13 @@ pub async fn start_multi_download_background_await(
     });
 
     // Attendre que tous les téléchargements soient finis et récupérer les noms
-    let files = rx.await.map_err(|_| "Erreur lors de la récupération des fichiers".to_string())?;
+    let files = rx
+        .await
+        .map_err(|_| "Erreur lors de la récupération des fichiers".to_string())?;
 
     // Retourner uniquement les noms
     Ok(format!("{}", files.join(", ")))
 }
-
-
 
 // -------------------------------
 // 2) Téléchargement d'une vidéo avec yt-dlp
@@ -372,15 +375,33 @@ pub async fn one_vd_dwl(
         .spawn()
         .map_err(|e| e.to_string())?;
 
+    emit_progress(
+        &handle,
+        url.clone(),
+        0.0,
+        "0B".to_string(),
+        "Initializing...".to_string(),
+        0,
+        0,
+        video_name.clone(),
+    );
     let stdout = child.stdout.take().ok_or("Impossible de capturer stdout")?;
     let stderr = child.stderr.take().ok_or("Impossible de capturer stderr")?;
-
+    
     let progress_regex = Regex::new(
-        r"\[download\]\s+(\d+\.?\d*)%\s+of\s+~?(\d+\.?\d*)(.*?)\s+at\s+(\d+\.?\d*)(.*?)/s\s+ETA\s+(\d{2}:\d{2})"
+        //old regex
+        //r"\[download\]\s+(\d+\.?\d*)%\s+of\s+~?\s*(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)?\s+at\s+(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)?/s\s+ETA\s+(\d{2}:\d{2})"
+
+        //new regex besoin de blockage sur la taille exact
+        r"\[download\]\s+(\d+\.?\d*)%\s+of\s+~?\s*(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)\s+at\s+(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)/s\s+ETA\s+(\d{2}:\d{2}|Unknown)"
     ).unwrap();
 
-    let mut stdout_output = String::new();
-    let mut last_progress = 0.0;
+    let mut global_total_bytes: Option<u64> = None;
+    let mut stdout_output: String = String::new();
+    let mut last_progress: f64 = 0.0; // ajouter [mut] n cas de modification 
+    let mut size_locked: bool = false;
+    let mut first_downloaded: Option<u64> = None;  
+    let mut first_total:     Option<u64> = None;
 
     let stderr_handle = std::thread::spawn(move || {
         let mut stderr_lines = String::new();
@@ -395,23 +416,89 @@ pub async fn one_vd_dwl(
     // Lecture ligne par ligne de stdout
     let stdout_reader = BufReader::new(stdout);
     for line in stdout_reader.lines().flatten() {
+        warn!("{:?}",&line);
+
         stdout_output.push_str(&line);
         stdout_output.push('\n');
-
+        // le probleme de single DWL, ici c qu'il ne passe pas la condition suivant sachant que l'affichage est le suivant:
+        //"[download]  98.9% of ~   6.15MiB at    2.34MiB/s ETA 00:00 (frag 83/83)"
         if let Some(caps) = progress_regex.captures(&line) {
-            let progress = caps.get(1).and_then(|m| m.as_str().parse::<f64>().ok()).unwrap_or(0.0);
+            let progress = caps
+                .get(1)
+                .and_then(|m| m.as_str().parse::<f64>().ok())
+                .unwrap_or(0.0);
+
             last_progress = progress;
             
-            let total_str = caps.get(2).and_then(|m| m.as_str().parse::<f64>().ok()).unwrap_or(0.0);
-            let unit = caps.get(3).map(|m| m.as_str().trim()).unwrap_or("");
-            let speed_val = caps.get(4).and_then(|m| m.as_str().parse::<f64>().ok()).unwrap_or(0.0);
-            let speed_unit = caps.get(5).map(|m| m.as_str().trim()).unwrap_or("");
+            let total_str = caps
+                .get(2)
+                .and_then(|m| m.as_str().parse::<f64>().ok())
+                .unwrap_or(0.0);
+            
+            // IMPORTANT : Capturer l'unité à l'index 3 maintenant
+            let unit = caps.get(3).map(|m| m.as_str().trim()).unwrap_or("MiB");
+            
+            let speed_val = caps
+                .get(4)
+                .and_then(|m| m.as_str().parse::<f64>().ok())
+                .unwrap_or(0.0);
+            
+            // IMPORTANT : Capturer l'unité de vitesse à l'index 5
+            let speed_unit = caps.get(5).map(|m| m.as_str().trim()).unwrap_or("MiB");
+            
             let eta = caps.get(6).map(|m| m.as_str()).unwrap_or("00:00");
+            
+            //old fixage  de la taille
+            //if global_total_bytes.is_none() {
+            //    let calculated_total = convert_to_bytes(total_str, unit);
+            //    if calculated_total > 0 {
+            //        global_total_bytes = Some(calculated_total);
+            //        info!("📦 [TOTAL SIZE LOCKED] {} bytes ({:.2} MB)", 
+            //            calculated_total, 
+            //            calculated_total as f64 / (1024.0 * 1024.0));
+            //    }
+            //}
 
-            let total_bytes = convert_to_bytes(total_str, unit);
-            let downloaded_bytes = (total_bytes as f64 * progress / 100.0) as u64;
+            //New fixage  de la taille 
+            if total_str > 0.1 {
+                let calculated_total = convert_to_bytes(total_str, unit);
+                
+                if calculated_total > 100 {
+                    // Si progression < 20% → TOUJOURS mettre à jour
+                    if progress < 20.0 {
+                        global_total_bytes = Some(calculated_total);
+                        info!("📊 [SIZE UPDATE] {:.2} MB ({:.1}%) [Not locked yet]", 
+                            calculated_total as f64 / (1024.0 * 1024.0),
+                            progress
+                        );
+                    }
+                    // Si progression >= 20% ET pas encore verrouillé → VERROUILLER
+                    else if !size_locked {
+                        global_total_bytes = Some(calculated_total);
+                        size_locked = true; // ✅ VERROUILLER ICI
+                        info!("🔒🔒🔒 [SIZE LOCKED] {:.2} MB at {:.1}% 🔒🔒🔒", 
+                            calculated_total as f64 / (1024.0 * 1024.0),
+                            progress
+                        );
+                    }
+                    // Si déjà verrouillé → NE RIEN FAIRE (pas de else, pas d'update)
+                }
+            }
+            let total_bytes =  global_total_bytes.unwrap_or(0);
+            let downloaded_bytes = if total_bytes > 0 {
+                (total_bytes as f64 * progress / 100.0) as u64
+            } else {
+                0
+            };
+
+            if first_downloaded.is_none() {
+                first_downloaded = Some(downloaded_bytes);
+                first_total      = Some(total_bytes);
+            }
+
             let speed_str = format!("{:.2}{}", speed_val, speed_unit);
 
+            // Émettre la progression
             emit_progress(
                 &handle,
                 url.clone(),
@@ -422,6 +509,14 @@ pub async fn one_vd_dwl(
                 total_bytes,
                 video_name.clone(),
             );
+            
+            
+            
+            // Log pour debug (à retirer en production)
+            info!("[PROGRESS] {}% | {}/{} bytes", 
+              progress, 
+              downloaded_bytes, 
+              total_bytes);
         }
     }
 
@@ -429,23 +524,23 @@ pub async fn one_vd_dwl(
     let status = child.wait().map_err(|e| e.to_string())?;
 
     // ---------- ÉMISSION DU STATUS FINAL AVANT DE RETOURNER ----------
-    
+
     // Helper pour émettre le statut de complétion
     let emit_completion = |status: &str, path: Option<String>, error: Option<String>| {
         // Émettre 100% si pas encore fait
-        if last_progress < 100.0 {
+        if last_progress <= 100.0 {
             emit_progress(
                 &handle,
                 url.clone(),
                 100.0,
                 "0KB".to_string(),
                 "00:00".to_string(),
-                0,
-                0,
+                first_downloaded.unwrap_or(0),   // ✅ toute 1ᵉʳ valeur
+                first_total.unwrap_or(0), 
                 video_name.clone(),
             );
         }
-        
+
         let payload = CompletionPayload {
             url: url.clone(),
             status: status.to_string(),
@@ -464,7 +559,7 @@ pub async fn one_vd_dwl(
         {
             let path = line.replace(" has already been downloaded", "");
             let full_message = format!("Fichier Déjà téléchargé : {}", path);
-            
+
             emit_completion("already_downloaded", Some(path.clone()), None);
             return Ok(full_message);
         }
@@ -474,22 +569,34 @@ pub async fn one_vd_dwl(
     let server_error = stderr_output.contains("HTTP Error 502")
         || stderr_output.contains("HTTP Error 503")
         || stderr_output.contains("Got error");
-    
-    let not_found_error = stderr_output.contains("HTTP Error 404")
-        || stderr_output.contains("Not Found");
-    
+
+    let not_found_error =
+        stderr_output.contains("HTTP Error 404") || stderr_output.contains("Not Found");
+
     let cnx_error = stderr_output.contains("getaddrinfo failed")
         || stderr_output.contains("Failed to resolve")
         || stderr_output.contains("Network");
 
     if server_error {
-        emit_completion("server_error", None, Some("Erreur serveur (502/503)".to_string()));
+        emit_completion(
+            "server_error",
+            None,
+            Some("Erreur serveur (502/503)".to_string()),
+        );
         return Ok("server issue".to_string());
     } else if not_found_error {
-        emit_completion("not_found", None, Some("URL introuvable ou expirée".to_string()));
+        emit_completion(
+            "not_found",
+            None,
+            Some("URL introuvable ou expirée".to_string()),
+        );
         return Ok("url not found or expired".to_string());
     } else if cnx_error {
-        emit_completion("connection_error", None, Some("Erreur de connexion".to_string()));
+        emit_completion(
+            "connection_error",
+            None,
+            Some("Erreur de connexion".to_string()),
+        );
         return Ok("cnx error".to_string());
     }
 
@@ -536,13 +643,13 @@ fn convert_to_bytes(value: f64, unit: &str) -> u64 {
 }
 
 fn emit_progress(
-    handle: &AppHandle, 
-    url: String, 
-    progress: f64, 
-    speed: String, 
-    eta: String, 
-    downloaded_bytes: u64, 
-    total_bytes: u64, 
+    handle: &AppHandle,
+    url: String,
+    progress: f64,
+    speed: String,
+    eta: String,
+    downloaded_bytes: u64,
+    total_bytes: u64,
     video_name: String
 ) {
     let payload = ProgressPayload {
@@ -554,5 +661,12 @@ fn emit_progress(
         total_bytes,
         video_name,
     };
+    info!("[emit progress] {:?} ",payload.url);
+    info!("[emit progress] {:?} ",payload.progress);
+    info!("[emit progress] {:?} ",payload.speed);
+    info!("[emit progress] {:?} ",payload.eta);
+    info!("[emit progress] {:?} ",payload.downloaded_bytes);
+    info!("[emit progress] {:?} ",payload.total_bytes);
+    info!("[emit progress] {:?} ",payload.video_name);
     let _ = handle.emit("download-progress", payload);
 }

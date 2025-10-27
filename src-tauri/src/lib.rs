@@ -12,6 +12,8 @@ use tauri::{
 };
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_log::{Target, TargetKind};
+
 use tokio::time::{sleep, Duration};
 use webbrowser;
 
@@ -86,12 +88,11 @@ async fn open_folder(path: String) -> Result<(), String> {
 
     Ok(())
 }
-// 2️⃣ Open link on a browser 
+// 2️⃣ Open link on a browser
 
 #[command]
 async fn open_link(url: String) -> Result<(), String> {
-    webbrowser::open(&url)
-        .map_err(|e| format!("Failed to open browser: {}", e))?;
+    webbrowser::open(&url).map_err(|e| format!("Failed to open browser: {}", e))?;
     Ok(())
 }
 
@@ -108,7 +109,6 @@ async fn one_vd_dwl_caller(
     output_path: Option<String>,
     format: Option<String>, // <-- nouvel argument
 ) -> Result<String, String> {
-
     downloads::one_vd_dwl(
         handle,
         url,
@@ -117,7 +117,7 @@ async fn one_vd_dwl_caller(
         ignore_errors,
         concurrent_fragments,
         output_path,
-        format, 
+        format,
     )
     .await
 }
@@ -132,22 +132,26 @@ async fn multi_vd_dwl_caller(
     output_path: Option<String>,
     max_concurrent: Option<usize>,
 ) -> Result<String, String> {
-        downloads::start_multi_download_background_await(
-            handle,
-            videos,
-            no_part,
-            ignore_errors,
-            concurrent_fragments,
-            output_path,
-            max_concurrent,
-        )
-        .await
+    downloads::start_multi_download_background_await(
+        handle,
+        videos,
+        no_part,
+        ignore_errors,
+        concurrent_fragments,
+        output_path,
+        max_concurrent,
+    )
+    .await
 }
 
 /// Point d’entrée de l’application
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_log::Builder::new().targets([
+            Target::new(TargetKind::Stdout),
+            Target::new(TargetKind::LogDir { file_name: Some("Downloads".to_string()) })
+        ]).build())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             // On ignore complètement les arguments
@@ -180,7 +184,6 @@ pub fn run() {
             info_urls::add_to_single_download_by_date,
             open_link
         ])
-
         // Setup (config initiale)
         .setup(|app| {
             let splash = app.get_webview_window("splashscreen").unwrap();
@@ -195,7 +198,7 @@ pub fn run() {
             let open_i = MenuItem::with_id(app, "open", "Open AMARG Window", true, None::<&str>)?;
             let open_folder_i = MenuItem::with_id(
                 app,
-                "open_folder", 
+                "open_folder",
                 "Open Downloads Folder",
                 true,
                 None::<&str>,
@@ -232,7 +235,7 @@ pub fn run() {
             if is_startup_mode {
                 // MODE STARTUP : Tray seulement, pas de splashscreen
                 let _ = splash.destroy(); // On n'a pas besoin du splash
-                let _ = main.hide();      // Main reste cachée
+                let _ = main.hide(); // Main reste cachée
             } else {
                 // MODE NORMAL : Splashscreen puis main
                 tauri::async_runtime::spawn({
@@ -241,7 +244,7 @@ pub fn run() {
                     async move {
                         // Splashscreen pendant 4s
                         sleep(Duration::from_secs(4)).await;
-                        
+
                         // Transition splash → main
                         let _ = splash.destroy();
                         let _ = main.show();
@@ -252,7 +255,6 @@ pub fn run() {
 
             Ok(())
         })
-
         // ✅ Empêcher la fermeture → cache la fenêtre
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {

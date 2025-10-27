@@ -106,7 +106,8 @@ function getProgressColor(status: DownloadItem['status'], isDark: boolean): stri
 // ==================== FONCTION PRINCIPALE ====================
 
 export function createDownloadProgressBar() {
-    const savedTheme = window.localStorage.getItem("theme");
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
     const isDark = savedTheme?.trim() !== "light";
 
     // No persistent global total: we only use session counters and optional expectedTotal
@@ -171,7 +172,7 @@ export function createDownloadProgressBar() {
                 .filter(d => d.status === 'queued').length;
 
             if (downloadingCount > 0) {
-                //mainTitle.textContent = `Downloading`;
+                mainTitle.textContent = `Downloading...`;
                 mainTitle.style.color = isDark ? "#ffffff" : "#1a1a1a";
             } else if (queuedCount > 0) {
                 mainTitle.textContent = `${queuedCount} waiting`;
@@ -456,7 +457,8 @@ export function createDownloadProgressBar() {
 
     // Styles au survol
     [expandBtn, minimizeBtn, closeBtn].forEach((btn: HTMLElement) => {
-        const savedTheme = window.localStorage.getItem("theme");
+        const THEME = document.documentElement.getAttribute("data-theme");
+        const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
         const isDark = savedTheme?.trim() !== "light";
 
         btn.onmouseenter = () => {
@@ -467,7 +469,8 @@ export function createDownloadProgressBar() {
         };
         
         btn.onmouseleave = () => {
-            const savedTheme = window.localStorage.getItem("theme");
+            const THEME = document.documentElement.getAttribute("data-theme");
+            const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
             const isDark = savedTheme?.trim() !== "light";
             
             btn.style.background = isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)";
@@ -1287,7 +1290,8 @@ function updateTheme(
     closeBtn: HTMLElement,
     _isDark: boolean
 ) {
-    const currentTheme = window.localStorage.getItem("theme");
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const currentTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
     const isDarkMode = currentTheme?.trim() !== "light";
     
     container.style.background = isDarkMode

@@ -1,12 +1,12 @@
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use tauri::{command, AppHandle, path::BaseDirectory,Manager};
-use tokio::process::Command;
-use tokio::fs;
-use std::process::Stdio;
-use uuid::Uuid;
 use chrono::Local;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
+use std::process::Stdio;
+use tauri::{command, path::BaseDirectory, AppHandle, Manager};
+use tokio::fs;
+use tokio::process::Command;
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VideoInfo {
@@ -96,9 +96,17 @@ pub async fn get_video_info(
                 .unwrap_or("")
                 .to_string()
         },
-        author: json.get("uploader").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        duration: json.get("duration_string").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        quality:  if format.to_lowercase() == "mp3" {
+        author: json
+            .get("uploader")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+        duration: json
+            .get("duration_string")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+        quality: if format.to_lowercase() == "mp3" {
             // 🎵 afficher la meilleure qualité audio détectée
             if let Some(abr) = get_number(&json, "abr") {
                 format!("{} kbps", abr as u32)
@@ -106,7 +114,7 @@ pub async fn get_video_info(
                 "128 kbps".to_string() // valeur par défaut si yt-dlp ne fournit rien
             }
         } else {
-             // 🎥 pour mp4 → extraire la hauteur vidéo après "x"
+            // 🎥 pour mp4 → extraire la hauteur vidéo après "x"
             if let Some(format_str) = json.get("format").and_then(|v| v.as_str()) {
                 // Regex pour capturer la partie après "x"
                 let re = regex::Regex::new(r"x(\d+)").unwrap();
@@ -122,8 +130,8 @@ pub async fn get_video_info(
         format: format.clone(),
         size: {
             let (bytes, estimated) = if format.to_lowercase() == "mp3" {
-                if let Some(b) = get_number(&json, "filesize")
-                    .or_else(|| get_number(&json, "filesize_approx"))
+                if let Some(b) =
+                    get_number(&json, "filesize").or_else(|| get_number(&json, "filesize_approx"))
                 {
                     (b, false) // ✅ valeur réelle
                 } else {
@@ -132,8 +140,8 @@ pub async fn get_video_info(
                     (duration * abr * 1000.0 / 8.0, true) // ⚡ estimation
                 }
             } else {
-                if let Some(b) = get_number(&json, "filesize")
-                    .or_else(|| get_number(&json, "filesize_approx"))
+                if let Some(b) =
+                    get_number(&json, "filesize").or_else(|| get_number(&json, "filesize_approx"))
                 {
                     (b, false) // ✅ valeur réelle
                 } else {
@@ -150,9 +158,12 @@ pub async fn get_video_info(
             }
         },
         url: url.clone(),
-        thumbnail: json.get("thumbnail").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        thumbnail: json
+            .get("thumbnail")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
     };
-
 
     // --- chemin du dossier AppData ---
     let app_data = app
@@ -168,17 +179,12 @@ pub async fn get_video_info(
         .await
         .map_err(|e| format!("Impossible de créer le dossier AppData: {}", e))?;
 
-
-
-
-
     // --- lecture du fichier existant (async) ---
     let mut map: HashMap<String, VideoInfo> = if json_path.exists() {
         let data = fs::read_to_string(&json_path)
             .await
             .map_err(|e| format!("Erreur lecture temp_DWL.json : {}", e))?;
-        serde_json::from_str(&data)
-            .map_err(|e| format!("Erreur parsing temp_DWL.json : {}", e))?
+        serde_json::from_str(&data).map_err(|e| format!("Erreur parsing temp_DWL.json : {}", e))?
     } else {
         HashMap::new()
     };
@@ -209,11 +215,8 @@ pub async fn get_video_info(
     Ok(info)
 }
 
-
-
-
-// -------------------------------------------------------------------------------- 
-// fonctionne pour supprimer tous le fichier temps de liste des video a telecharger  
+// --------------------------------------------------------------------------------
+// fonctionne pour supprimer tous le fichier temps de liste des video a telecharger
 // --------------------------------------------------------------------------------
 #[command]
 pub async fn delete_temp_dwl(app: AppHandle) -> String {
@@ -232,9 +235,8 @@ pub async fn delete_temp_dwl(app: AppHandle) -> String {
     }
 }
 
-
-// ------------------------------------------------------------------------------------- 
-// fonctionne pour supprimer une carte du fichier temps de liste des video a telecharger  
+// -------------------------------------------------------------------------------------
+// fonctionne pour supprimer une carte du fichier temps de liste des video a telecharger
 // -------------------------------------------------------------------------------------
 #[command]
 pub async fn delete_video_by_id(app: AppHandle, id: String) -> Result<String, String> {
@@ -258,9 +260,13 @@ pub async fn delete_video_by_id(app: AppHandle, id: String) -> Result<String, St
         serde_json::from_str(&content).map_err(|e| format!("Erreur parsing JSON : {}", e))?;
 
     // --- recherche de la clé correspondant à l'id ---
-    let key_to_remove = map
-        .iter()
-        .find_map(|(key, video)| if video.id == id { Some(key.clone()) } else { None });
+    let key_to_remove = map.iter().find_map(|(key, video)| {
+        if video.id == id {
+            Some(key.clone())
+        } else {
+            None
+        }
+    });
 
     let key = match key_to_remove {
         Some(k) => k,
@@ -281,14 +287,12 @@ pub async fn delete_video_by_id(app: AppHandle, id: String) -> Result<String, St
     Ok(format!("Vidéo with id '{}' deleted with success.", id))
 }
 
-
-// ----------------------------------------------------------------------------------------- 
-// fonctionne pour cree un fichier searce_history.json pour l'historique des telechargements  
+// -----------------------------------------------------------------------------------------
+// fonctionne pour cree un fichier searce_history.json pour l'historique des telechargements
 // -----------------------------------------------------------------------------------------
 
 #[command]
 pub async fn copy_temp_to_history(app: AppHandle) -> Result<String, String> {
-
     // --- chemin du dossier AppData ---
     let app_data = app
         .path()

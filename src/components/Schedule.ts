@@ -26,7 +26,8 @@ let selectedCards: HTMLElement[] = [];
 //let nbSelected = 0;
 
 function createCustomVideoAlert(videos: VideoData[], title: string = "Downloads Schedule"): HTMLDivElement {
-    let currenTTheme = localStorage.getItem("theme")
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const currenTTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
 
     const overlay = document.createElement("div");
     overlay.style.cssText = `
@@ -526,8 +527,8 @@ function createCustomVideoAlert(videos: VideoData[], title: string = "Downloads 
             <path d="M23 7l-7 5 7 5V7z" stroke="currentColor" stroke-width="2"/>
             <rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
             </svg>
-            <h3 id="no-vd-fnd" style="font-size: 18px; margin: 0 0 6px 0;">No videos found</h3>
-            <p id="no-vd-fnd" style="margin: 0; font-size: 14px; opacity: .8;">Add some videos to get started</p>
+            <h3 id="no-vd-fnd" style="font-size: 18px; margin: 0 0 6px 0;color:${currenTTheme?.trim() === "light" ? "#000000ff" : "#ffffffff"};">No videos found</h3>
+            <p id="no-vd-fnd" style="margin: 0; font-size: 14px; opacity: .8;color:${currenTTheme?.trim() === "light" ? "#000000ff" : "#ffffffff"};">Add some videos to get started</p>
         `;
         content.appendChild(emptyState);
     } else {
@@ -1020,7 +1021,8 @@ function createVideoCardWithDelete(videoData: VideoData, index: number, updateSe
 // --------------- fn creat check box ---------------
 
 function createModernCheckbox(id: string, checked: boolean, label: string, description?: string) {
-  let savedTheme = localStorage.getItem("theme");
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
 
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";

@@ -12,7 +12,8 @@ export interface SimpleDownloadConfig {
 // Fonction pour détecter le thème
 function getTheme(): 'light' | 'dark' {
   // Essayer d'abord de récupérer depuis localStorage
-  const savedTheme = localStorage?.getItem("theme");
+  const THEME = document.documentElement.getAttribute("data-theme");
+  const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
   if (savedTheme === "light" || savedTheme === "dark") {
     return savedTheme;
   }

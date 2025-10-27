@@ -1,7 +1,8 @@
 
 
 export function renderKeyBody(){
-    const savedTheme = localStorage.getItem("theme");
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
     const container = document.createElement('div');
     container.className = 'msg-key-ai';
     container.style.cssText = `
@@ -109,7 +110,8 @@ export function renderKeyBody(){
     return container;
 }
 export function renderKeyInput() {
-    const savedTheme = localStorage.getItem("theme");
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
 
     const keyContainer = document.createElement('div');
     keyContainer.className = 'key-container';
@@ -196,16 +198,17 @@ export function renderKeyInput() {
     `;
 
     keyZone.addEventListener("focus", () => {
-        const savedTheme = localStorage.getItem("theme");
-    if (keyZone.textContent === placeholderText) {
-        keyZone.textContent = "";
-        keyZone.style.color = ` ${savedTheme?.trim() === "dark" ? "#ffffffff" : "#000000ff"}`; 
-        sendKey.classList.remove("desabledDIV")
-        }
+        const THEME = document.documentElement.getAttribute("data-theme");
+        const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
+        if (keyZone.textContent === placeholderText) {
+            keyZone.textContent = "";
+            keyZone.style.color = ` ${savedTheme?.trim() === "dark" ? "#ffffffff" : "#000000ff"}`; 
+            sendKey.classList.remove("desabledDIV")
+            }
     });
 
     keyZone.addEventListener("blur", () => {
-    if (keyZone.textContent.trim() === "") {
+    if ((keyZone.textContent ?? "").trim() === "") {
         keyZone.textContent = placeholderText;
         keyZone.style.color = "rgb(136, 136, 136)"; 
         sendKey.classList.add("desabledDIV");
@@ -237,7 +240,8 @@ export function renderKeyInput() {
 }
 
 export function renderSvgDecoratif(){
-    const savedTheme = localStorage.getItem("theme");
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
     // creation du svg décoratif
     const svgWrapper = document.createElement("div");
     svgWrapper.classList.add("svg-popup");

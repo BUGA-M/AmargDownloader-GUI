@@ -14,7 +14,8 @@ function loadGoogleFonts() {
 export function bugaPopup() {
     // LOADING DES FONT FAMILY
     loadGoogleFonts();
-    const savedTheme = localStorage.getItem("theme");
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
 
     // creation du container principal
     const container = document.createElement("div");
@@ -108,7 +109,8 @@ export function bugaPopup() {
 }
 
 function closeButton(){
-    const savedTheme = localStorage.getItem("theme");
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
     // Enhanced close button
     const closeButton = document.createElement("button");
     closeButton.classList.add("closeBuga")
@@ -140,14 +142,16 @@ function closeButton(){
 
 
     closeButton.addEventListener('mouseenter', () => {
-        const savedTheme = localStorage.getItem("theme");
+        const THEME = document.documentElement.getAttribute("data-theme");
+        const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
         closeButton.style.background = `${savedTheme?.trim() === "light" ? "#af4c0f" : "rgb(99, 99, 99)"} `;
         closeButton.style.transform = 'scale(1.1) rotate(90deg)';
         closeButton.style.boxShadow = ` 0 4px 20px ${savedTheme?.trim() === "light" ? "#c9c9c9ff" : "rgba(255, 255, 255, 0.15)"} `;
     });
 
     closeButton.addEventListener('mouseleave', () => {
-        const savedTheme = localStorage.getItem("theme");
+        const THEME = document.documentElement.getAttribute("data-theme");
+        const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
         closeButton.style.background =  `${savedTheme?.trim() === "light" ? "#e0e0e0" : "rgb(51, 51, 51)"} `;
         closeButton.style.transform = 'scale(1) rotate(0deg)';
         closeButton.style.boxShadow = 'none';

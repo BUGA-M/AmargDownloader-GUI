@@ -1,7 +1,8 @@
 export function block(): void {
   window.addEventListener('contextmenu', (e: MouseEvent) => {
     e.preventDefault();
-    let currenTTheme = localStorage.getItem('theme')
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const currenTTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
     // Récupérer les données vidéo depuis l'élément cliqué
     const clickedElement = e.target as HTMLElement;
     const videoCard = clickedElement.closest('.allow-right-click') as HTMLElement;

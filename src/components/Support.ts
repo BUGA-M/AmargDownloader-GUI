@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 export function support() {
-    const savedTheme = localStorage.getItem("theme");
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
     // Container
     const container = document.createElement('div');
     container.className = 'custom-alert-drawer';
@@ -103,7 +104,8 @@ export function support() {
 }
 
 function ContactSupport() {
-    const savedTheme = localStorage.getItem("theme");
+    const THEME = document.documentElement.getAttribute("data-theme");
+    const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
     // *********************** SVG *********************** //
     const iconsvg = `
         <svg xmlns="http://www.w3.org/2000/svg" 
@@ -242,7 +244,7 @@ function ContactSupport() {
     });
 
     messageBody.addEventListener("blur", () => {
-    if (messageBody.textContent.trim() === "") {
+    if ((messageBody.textContent ?? "").trim() === ""){
         messageBody.textContent = placeholderText;
         messageBody.style.color = "rgb(136, 136, 136)"; 
         sendBody.classList.add("desabledDIV");
@@ -331,12 +333,14 @@ function ContactSupport() {
     });
 
     Github.addEventListener( "mouseenter",() => {
-        const savedTheme = localStorage.getItem("theme");
+        const THEME = document.documentElement.getAttribute("data-theme");
+        const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
         Github.style.backgroundColor = `${savedTheme?.trim() === "light" ? "#fff" : "#212121"}`
         Github.style.boxShadow = `0 0 8px  ${savedTheme?.trim() === "light" ? "rgb(175, 76, 15)" : "#636363"}`;
     })
     Github.addEventListener( "mouseleave",() => {
-        const savedTheme = localStorage.getItem("theme");
+        const THEME = document.documentElement.getAttribute("data-theme");
+        const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
         Github.style.backgroundColor =`${savedTheme?.trim() === "light" ? "#dfdfdfff" : "#333333ff"}`
         Github.style.boxShadow = 'none';
     })
@@ -361,13 +365,15 @@ function ContactSupport() {
     });
 
     Discord.addEventListener( "mouseenter",() => {
-        const savedTheme = localStorage.getItem("theme");
+        const THEME = document.documentElement.getAttribute("data-theme");
+        const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
         Discord.style.backgroundColor = `${savedTheme?.trim() === "light" ? "#fff" : "#212121"}`;
         Discord.style.boxShadow = `0 0 8px  ${savedTheme?.trim() === "light" ? "rgb(175, 76, 15)" : "#636363"}`;
         
     })
     Discord.addEventListener( "mouseleave",() => {
-        const savedTheme = localStorage.getItem("theme");
+        const THEME = document.documentElement.getAttribute("data-theme");
+        const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
         Discord.style.backgroundColor =`${savedTheme?.trim() === "light" ? "#dfdfdfff" : "#333333ff"}`
         Discord.style.boxShadow = 'none'
     })
