@@ -3,8 +3,8 @@
 version = 4
 
 [[package]]
-name = "AMARG-Downloder-beta"
-version = "0.1.0"
+name = "AMARG-Downloder"
+version = "1.0.0"
 dependencies = [
  "chrono",
  "dirs 4.0.0",

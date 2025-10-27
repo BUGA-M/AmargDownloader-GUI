@@ -1,9 +1,16 @@
 [package]
-name = "AMARG-Downloder-beta"
-version = "0.1.0"
+name = "AMARG-Downloder"
+version = "1.0.0"
 description = "A lightweight and fast Tauri application for downloading videos from the internet, with format management, customizable output folders, and a user-friendly interface."
-authors = ["BUGA <ggxini@gmail.com>"]
+authors = ["BUGA-M <ggxini@gmail.com>"]
 edition = "2021"
+documentation = "https://github.com/BUGA-M/AmargDownloder-GUI"
+homepage = "https://buga-m.github.io/AmargDownloder"
+repository = "https://github.com/BUGA-M/AmargDownloder-GUI"
+license = "MIT"
+readme = "README.md"
+keywords = ["video", "downloader", "youtube", "tiktok", "instagram", "tauri", "yt-dlp", "ffmpeg" ]
+categories = ["multimedia", "gui", "network-programming"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

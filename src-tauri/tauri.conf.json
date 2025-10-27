@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "AMARG Downloader beta",
-  "version": "0.1.0",
-  "identifier": "com.amarg.downloader",
+  "productName": "AMARG Downloader",
+  "version": "1.0.0",
+  "identifier": "Amarg.Downloader",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -62,8 +62,11 @@
       "resources/yt-dlp.exe",
       "resources/ffmpeg.exe"
     ],
-    "publisher": "BUGA",
-    "copyright": "Copyright © 2024 AMARG. All rights reserved.",
+    "publisher": "BUGA-M",
+    "copyright": "Copyright © 2025 AMARG. All rights reserved.",
+    "category": "Multimedia",
+    "shortDescription": "Fast and modern video downloader.",
+    "longDescription": "AMARG Downloader is a lightweight, secure, and efficient app for downloading videos with advanced customization and format options.",
     "windows": {
       "digestAlgorithm": "sha256",
       "timestampUrl": null
