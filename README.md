@@ -62,7 +62,7 @@ A lightweight, fast, and user-friendly desktop application for downloading video
 ## 📋 System Requirements
 
 - **Operating System**: Windows 10/11 (64-bit)
-- **Memory**: 4GB RAM minimum, 8GB recommended
+- **Memory**: 2GB RAM minimum, 4GB recommended
 - **Storage**: 100MB for application + space for downloads
 - **Network**: Internet connection required
 
@@ -75,14 +75,14 @@ A lightweight, fast, and user-friendly desktop application for downloading video
 <br>
 
 ```powershell
-# Create destination folder
-mkdir -p AmargDownloaderBeta
+# Create destination folder(optional)
+mkdir -p AmargDownloader
 
 # Download the NSIS installer
-Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v1.0.0/Amarg_Downloader_setup.exe" -OutFile "AmargDownloaderBeta\AMARG-Setup-NSIS.exe"
+Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v1.0.0/Amarg_Downloader_setup.exe" -OutFile "AmargDownloader\AMARG-Setup-NSIS.exe"
 
 # Run the installer
-.\AmargDownloaderBeta\AMARG-Setup-NSIS.exe
+.\AmargDownloader\AMARG-Setup-NSIS.exe
 ```
 </details>
 
@@ -91,14 +91,14 @@ Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/do
 <br>
 
 ```powershell
-# Create destination folder
-mkdir -p AmargDownloaderBeta
+# Create destination folder(optional)
+mkdir -p AmargDownloader
 
 # Download the MSI installer
-Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v1.0.0/Amarg_Downloader.msi" -OutFile "AmargDownloaderBeta\AMARG-Setup.msi"
+Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v1.0.0/Amarg_Downloader.msi" -OutFile "AmargDownloader\AMARG-Setup.msi"
 
 # Run the MSI installer
-.\AmargDownloaderBeta\AMARG-Setup.msi
+.\AmargDownloader\AMARG-Setup.msi
 ```
 </details>
 
@@ -254,7 +254,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔄 Version History
 
-### v0.1.0-beta (Current)
+### v1.0.0-beta (Current)
 - Initial release
 - Basic download functionality
 - Multi-platform support
