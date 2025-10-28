@@ -107,7 +107,7 @@ Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/do
 ```bash
 # Clone the repository
 git clone https://github.com/BUGA-M/AmargDownloder-GUI.git
-cd AmargDownloder-GUI
+cd AmargDownloader-GUI
 
 # Install dependencies
 npm install
@@ -116,10 +116,10 @@ npm install
 cd src-tauri/resources
 
 # Download FFmpeg executable
-Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/resources/ffmpeg.exe" -OutFile "ffmpeg.exe"
+Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloader-GUI/releases/download/resources/ffmpeg.exe" -OutFile "ffmpeg.exe"
 
 # Download yt-dlp executable
-Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/resources/yt-dlp.exe" -OutFile "yt-dlp.exe"
+Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloader-GUI/releases/download/resources/yt-dlp.exe" -OutFile "yt-dlp.exe"
 
 # Go back to project root
 cd ../..
