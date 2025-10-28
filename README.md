@@ -71,22 +71,6 @@ A lightweight, fast, and user-friendly desktop application for downloading video
 ### ⚡ Quick Setup
 
 <details>
-<summary><b><img src="src/assets/exe.png" alt= "Executabe" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" > Installation via Executable (Windows)</b></summary>
-<br>
-
-```powershell
-# Create destination folder
-mkdir -p AmargDownloaderBeta
-
-# Download the executable
-Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v0.1.0-beta/AMARG-Downloder-beta.exe" -OutFile "AmargDownloaderBeta\AMARG-Downloader-beta.exe"
-
-# Run the application
-.\AmargDownloaderBeta\AMARG-Downloader-beta.exe
-```
-</details>
-
-<details>
 <summary><b><img src="src/assets/nsis.png" alt= "nsis-setup" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" > Installation via NSIS Installer</b></summary>
 <br>
 
@@ -95,7 +79,7 @@ Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/do
 mkdir -p AmargDownloaderBeta
 
 # Download the NSIS installer
-Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v0.1.0-beta/AMARG.Downloader.beta_0.1.0_x64-setup.exe" -OutFile "AmargDownloaderBeta\AMARG-Setup-NSIS.exe"
+Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v1.0.0/Amarg_Downloader_setup.exe" -OutFile "AmargDownloaderBeta\AMARG-Setup-NSIS.exe"
 
 # Run the installer
 .\AmargDownloaderBeta\AMARG-Setup-NSIS.exe
@@ -111,7 +95,7 @@ Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/do
 mkdir -p AmargDownloaderBeta
 
 # Download the MSI installer
-Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v0.1.0-beta/AMARG.Downloader.beta_0.1.0_x64_en-US.msi" -OutFile "AmargDownloaderBeta\AMARG-Setup.msi"
+Invoke-WebRequest -Uri "https://github.com/BUGA-M/AmargDownloder-GUI/releases/download/v1.0.0/Amarg_Downloader.msi" -OutFile "AmargDownloaderBeta\AMARG-Setup.msi"
 
 # Run the MSI installer
 .\AmargDownloaderBeta\AMARG-Setup.msi
