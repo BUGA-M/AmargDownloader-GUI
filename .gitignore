@@ -119,7 +119,3 @@ src-tauri/resources/*.exe
 
 # Garder le .gitkeep pour maintenir le dossier
 !src-tauri/resources/.gitkeep
-
-#info-files
-vite.config.txt
-cargo.toml.txt

@@ -26,7 +26,7 @@ export default defineConfig(async () => ({
       output: {
         assetFileNames: (assetInfo: PreRenderedAsset) => {
           const fileName = assetInfo.name ?? '';
-
+          // ne pas hasher limage lors du build
           return fileName === 'A letter Logo.png'
             ? 'assets/[name][extname]'
             : 'assets/[name]-[hash][extname]';

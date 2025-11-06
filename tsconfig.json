@@ -13,7 +13,7 @@
     "isolatedModules": true,
     "noEmit": true,
 
-    /* Linting */
+    /* Linting Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
