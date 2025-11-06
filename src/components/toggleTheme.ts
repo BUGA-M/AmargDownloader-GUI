@@ -78,15 +78,18 @@ export function BtnTheme(): void {
 
     // Support message
     const messageSupport = document.querySelector(".messageSupport") as HTMLDivElement;
-    if (messageSupport) {
-    messageSupport.style.background = current === "light" ? "#e0e0e0" :  "#212121";
-    messageSupport.style.color = current === "light" ? "#161616ff" : "#dfdfdfff";
+      if (messageSupport) {
+      messageSupport.style.background = current === "light" ? "#e0e0e0" :  "#212121";
+      messageSupport.style.color = current === "light" ? "#161616ff" : "#dfdfdfff";
 
-      if (messageSupport?.textContent === `Need help ? \nContact our support team via email, our Discord server.`) {      
-        messageSupport.style.color = "rgb(136, 136, 136)";
-      }else{
+      messageSupport.addEventListener("focus",()=>{
         messageSupport.style.color = current === "light" ? "#000000" : "#ffffff";
+      })
+
+      if (messageSupport?.textContent === `Need help ? \nContact our support team via email, our Discord server, or by opening an issue on our GitHub repository.`) {      
+          messageSupport.style.color = "rgb(136, 136, 136)";
       }
+    
     }
 
     // Support send
@@ -164,13 +167,11 @@ export function BtnTheme(): void {
       //--- key-zone ---
       keyZone.style.background = current === "light"? "#e0e0e0 ": " rgb(33, 33, 33)";
       keyZone.style.borderRight= current === "light" ? "1px solid #af4c0f" : "1px solid #383838";
-      
+      keyZone.style.color = current === "light" ? "#000000" : "#ffffff";
       if (keyZone?.textContent === "Enter your ai studio key") {      
         keyZone.style.color = "rgb(136, 136, 136)";
-      }else{
-        keyZone.style.color = current === "light" ? "#000000ff" : "#ffffffff";
-      }
-
+      };
+      
       //--- sendSvg ---
       sendKey.style.color = current === "light" ? "#000000" : "#ffffff";
 
@@ -178,7 +179,7 @@ export function BtnTheme(): void {
 
       //----------------------- DWL Barre ------------------------------
       const dwlContainer = document.querySelector(".download-progress-container") as HTMLDivElement;
-
+      if (!dwlContainer) return; 
       if (dwlContainer) {
         // Update container background and border
         dwlContainer.style.background = current === "light"

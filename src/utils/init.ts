@@ -123,13 +123,13 @@ export async function initLocalStorage() {
       const amargFolder = await invoke<string | null>("get_amarg_folder_path");
       set_StoredFolder(amargFolder || ""); 
     } catch (error) {
-      console.error("Erreur lors de init dossier AMARG dans local storage :", error);
+      console.error("{126.init.ts} Erreur lors de init dossier AMARG dans local storage :", error);
     }
   }
 
   // ------- nb_fragment -------- //
   if (!get_nb_fragment()) {
-    set_nb_fragment("4");
+    set_nb_fragment("6");
   }
 
   // ------- noPart -------- //
@@ -199,7 +199,7 @@ export async function verifieStartup () {
           }
           return is_enabled
       }catch(error){
-          console.log("error on verifieStartup(): ",error)
+          console.info("{202.init.ts} error on verifieStartup(): ",error)
       }
 
   };

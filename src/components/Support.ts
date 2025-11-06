@@ -231,14 +231,16 @@ function ContactSupport() {
     `;
     // 
     
-    const placeholderText = "Need help ? \nContact our support team via email, our Discord server.";
+    const placeholderText = "Need help ? \nContact our support team via email, our Discord server, or by opening an issue on our GitHub repository.";
     messageBody.textContent = placeholderText;
 
     messageBody.addEventListener("focus", () => {
         const savedTheme = localStorage.getItem("theme");
-    if (messageBody.textContent === placeholderText) {
+    if (messageBody.textContent === placeholderText ) {
         messageBody.textContent = "";
-        messageBody.style.color = ` ${savedTheme?.trim() === "dark" ? "#ffffffff" : "#000000ff"}`; 
+        if( savedTheme ==="light" || savedTheme === "dark" ){
+            messageBody.style.color = ` ${savedTheme?.trim() === "dark" ? "#ffffffff" : "#000000ff"}`; 
+        }
         sendBody.classList.remove("desabledDIV")
     }
     });

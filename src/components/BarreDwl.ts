@@ -280,7 +280,7 @@ export function createDownloadProgressBar() {
         const payload = event.payload;
         const id = `download-${hashCode(payload.url)}`;
         
-        console.log('📦 Single download complete:', payload);
+        console.info('{283.BarreDwl.ts} Single download complete:', payload);
         
         if (state.downloads.has(id)) {
             const download = state.downloads.get(id)!;
@@ -355,7 +355,7 @@ export function createDownloadProgressBar() {
                     state.totalDWL = (Number(state.totalDWL) || 0) + 1;
                     window.localStorage.setItem('totalDWL', String(state.totalDWL));
                 } catch (e) {
-                    console.warn('Could not persist totalDWL', e);
+                    console.warn('{358.BarreDwl.ts} Could not persist totalDWL', e);
                 }
             }
         }
@@ -367,7 +367,7 @@ export function createDownloadProgressBar() {
     // 3. Complétion de tous les téléchargements (multi)
     listen<MultiDownloadCompletePayload>('download-complete', (event) => {
         const payload = event.payload;
-        console.log('🎉 All downloads complete:', payload);
+         console.info('{370.BarreDwl.ts} All downloads complete:', payload);
         
         const successCount = Array.from(state.downloads.values())
             .filter(d => d.status === 'completed').length;
@@ -408,8 +408,7 @@ export function createDownloadProgressBar() {
             const allDone = Array.from(state.downloads.values())
                 .every(d => d.status === 'completed' || d.status === 'error');
             if (allDone) {
-                console.log('Auto-closing progress bar');
-                // Décommenter pour activer la fermeture automatique
+                //console.log('Auto-closing progress bar');
                 // hide();
             }
         }, 8000);
@@ -434,7 +433,7 @@ export function createDownloadProgressBar() {
         downloadList.style.display = 'none';
         minimizedBar.style.display = 'flex';
         // ensure container keeps same position/size behavior
-        container.style.width = '260px';
+        container.style.width = '160px';
         container.style.borderRadius = '12px';
     });
 
@@ -544,7 +543,7 @@ export function createDownloadProgressBar() {
                 container.style.bottom = 'auto';
                 container.style.transform = 'none';
             } catch (e) {
-                console.warn('Failed to restore progress bar position:', e);
+                console.warn('{546.BarreDwl.ts} Failed to restore progress bar position:', e);
             }
         }
     };
@@ -583,7 +582,7 @@ export function createDownloadProgressBar() {
                 savePosition(container);
             }
         } catch (e) {
-            console.warn('ensureInViewport error', e);
+            console.warn('{585.BarreDwl.ts} ensureInViewport error', e);
         }
     }
 
@@ -601,14 +600,14 @@ export function createDownloadProgressBar() {
             window.removeEventListener('resize', _resizeHandler);
             window.removeEventListener('orientationchange', _resizeHandler as any);
         } catch (e) {
-            console.warn('Error removing window listeners', e);
+            console.warn('{603.BarreDwl.ts} Error removing window listeners', e);
         }
         try {
             if (typeof _cleanupDrag === 'function') {
                 _cleanupDrag();
             }
         } catch (e) {
-            console.warn('Error cleaning up drag listeners', e);
+            console.warn('{610.BarreDwl.ts} Error cleaning up drag listeners', e);
         }
     };
 
@@ -644,7 +643,7 @@ export function createDownloadProgressBar() {
         // Vider la liste des téléchargements
         downloadList.innerHTML = '';
         
-        console.log('🔄 Progress bar reset for new download session');
+        console.info('{646.BarreDwl.ts} 🔄 Progress bar reset for new download session');
     };
 
     // Exposer les méthodes publiques
@@ -662,7 +661,7 @@ export function createDownloadProgressBar() {
         return Number(state.totalDWL || 0);
     };
 
-    console.log('✅ Download progress bar created and listeners attached');
+    console.info('{664.BarreDwl.ts} ✅ Download progress bar created and listeners attached');
     return container;
 }
 
@@ -880,7 +879,8 @@ function createUIElements(container: HTMLDivElement, isDark: boolean) {
     downloadList.className = 'download-list';
     downloadList.style.cssText = `
         max-height: 0;
-        overflow: hidden;
+        overflow-y:auto;
+        overflow-x: hidden;
         transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         background: ${isDark ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.02)"};
     `;

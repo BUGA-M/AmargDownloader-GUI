@@ -1,4 +1,15 @@
 export function block(): void {
+  // ==================== BLOCAGE DU RAFRAÎCHISSEMENT ====================
+  window.addEventListener('keydown', (e: KeyboardEvent) => {
+      // Bloquer la combinaison de touches Ctrl+R et la touche F5
+      if ((e.ctrlKey && e.key.toLowerCase() === 'r') || e.key === 'F5') {
+          e.preventDefault();
+          // Vous pouvez laisser un log pour le débogage si vous le souhaitez
+           console.info("{8.BlockRLclick.ts} Action de rafraîchissement bloquée.");
+      }
+  });
+
+  // ==================== GESTION DU CLIC DROIT (MENU CONTEXTUEL) ====================
   window.addEventListener('contextmenu', (e: MouseEvent) => {
     e.preventDefault();
     const THEME = document.documentElement.getAttribute("data-theme");

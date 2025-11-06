@@ -13,7 +13,7 @@ export function openSettingsModal(): void {
 
     // Fragment getter
     function get_nb_fragment(): string {
-        return localStorage.getItem("Fragments") || "4";
+        return localStorage.getItem("Fragments") || "6";
     }
     
     // Output folder setter
@@ -585,7 +585,7 @@ export function openSettingsModal(): void {
                 outputInput.placeholder = folder;
             }
         } catch (error) {
-            console.error("Error selecting Downloads folder:", error);
+            console.error("{1131.Setting.ts} Error selecting Downloads folder:", error);
         }
     });
 
@@ -828,7 +828,7 @@ export function openSettingsModal(): void {
             }, 800);
 
         } catch (error) {
-            console.error("Error applying settings:", error);
+            console.error("{831.Settings.ts} Error applying Downloads settings:", error);
             
             // Show error state
             applyBtn.innerHTML = `

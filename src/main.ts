@@ -10,7 +10,7 @@ import { initSystemTheme } from  './components/initSystemTheme';
 import { BtnTheme } from  './components/toggleTheme'; 
 import { Verify } from  './utils/verifHTML'; 
 import { showDownloadSpinner, updateSpinnerText,stopDownloadSpinner } from  './components/SimpleProgress'; 
-
+import {setupConsoleRedirect} from "./utils/logger"
 
 import { block } from './components/BlockRLclick';
 
@@ -27,12 +27,18 @@ import { createDownloadProgressBar } from './components/BarreDwl';
 let progressBar: HTMLElement;
 
 
-initSystemTheme()
+//
+document.addEventListener('DOMContentLoaded', () => {
+  initSystemTheme();
+});
+// initSystemTheme()
 BtnTheme()
+setupConsoleRedirect();
 
 let downloadButtonEl: HTMLDivElement | null = document.querySelector(".download-btn") ;
 let addBtnEl :  HTMLButtonElement | null = document.querySelector(".add-btn") ;
 let scheduleButtonEl: HTMLDivElement | null = document.querySelector(".schedule-btn") as HTMLDivElement ;
+const dwl_btn_text =  document.getElementById("dwl_btn_text") as HTMLSpanElement ;
 
 
 
@@ -59,7 +65,7 @@ let scheduleButtonEl: HTMLDivElement | null = document.querySelector(".schedule-
 
 
 //------------------------------------------------------------------------------------//
-const dwl_btn_text =  document.getElementById("dwl_btn_text") as HTMLSpanElement ;
+
 dwl_btn_text.textContent =  `Start Bash Download ( ${localStorage.getItem("numberOfVideos") || 0} )`
 
 
@@ -93,7 +99,7 @@ let MultiDwlvideosList = new VideoMultiDwlQueue() ;
 
 
 if (!downloadButtonEl) {
-  console.error("Bouton de téléchargement introuvable (selector: .download-btn)");
+  console.error("{102.main.ts} Bouton de téléchargement introuvable (selector: .download-btn)");
   // Optionnel : sortir du script ou gérer différemment
   throw new Error("Élément requis non trouvé");
 }
@@ -105,14 +111,13 @@ if (!downloadButtonEl) {
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 try{
   if (!addBtnEl) {
-    console.error("Bouton d'ajout de type list ou single introuvable (selector: .download-btn)");
+    console.error("{114.main.ts} Bouton d'ajout de type list ou single introuvable (selector: .download-btn)");
     // Optionnel : sortir du script ou gérer différemment
     throw new Error("Élément requis non trouvé");
   }else{
     
 
     addBtnEl.addEventListener("click", async ()=>{
-      console.log(sanitizeFileName("فيديو")); 
       let nbOFurl : number = Number(localStorage.getItem('numberOfVideos'))
       
       const urlInput = document.querySelector<HTMLInputElement>("input.url-input") as HTMLInputElement;
@@ -123,7 +128,7 @@ try{
       if (!url) throw new Error("URL must be provided try again") ;
 
       if (url === 'Input URL introuvable' || url === 'URL Not Detected' || url === 'Invalid URL' ){
-        console.error(url);
+        console.error("{131.main.ts} ",url);
         return
       }
 
@@ -136,11 +141,9 @@ try{
       try{
         let result : jsonResult | undefined;
         if (format){
-          
-          console.log('extractInfo_to_json est en cours')
           // Désactiver le bouton pendant le traitement
           addBtnEl.classList.add('desabledDIV')
-          downloadButtonEl.textContent ="Adding video...";
+          dwl_btn_text.textContent = `Adding video...`;
           downloadButtonEl.classList.add('desabledDIV')
           scheduleButtonEl.classList.add('desabledDIV')
 
@@ -158,7 +161,7 @@ try{
 
 
           result = await extractInfo_to_json(url, formatInput?.value, OutputName) as jsonResult;
-          console.log("result de then main.ts [ligne 133]", result);
+          
         }
         if (result) {
           updateSpinnerText("addProgress",{
@@ -172,7 +175,7 @@ try{
       
           // Incrémenter le compteur SEULEMENT après succès
           nbOFurl++;
-          downloadButtonEl.textContent = `Start Bash Download ( ${nbOFurl} )`;
+          dwl_btn_text.innerText = `Start Bash Download ( ${nbOFurl} )`;
           localStorage.setItem('numberOfVideos', nbOFurl.toString());
 
           urlInput.value = "";
@@ -180,7 +183,7 @@ try{
           setTimeout(() => {stopDownloadSpinner("addProgress");}, 1500);
 
           MultiDwlvideosList.push(url, result.title, result.id,  formatInput?.value)
-          console.log("video to add in list", MultiDwlvideosList)
+          
         }
         
         
@@ -246,13 +249,14 @@ try{
         downloadButtonEl.classList.remove('desabledDIV')
         scheduleButtonEl.classList.remove('desabledDIV')
         //stopDownloadById("addProgress");
-        downloadButtonEl.textContent = `Start Bash Download ( ${nbOFurl} )`;
+        
+        dwl_btn_text.textContent = `Start Bash Download ( ${nbOFurl} )`;
       }
     })
   }
 
 }catch (error){
-  console.log("err on add-btn to db")
+  console.error("{259.main.ts} err on add-btn to db")
 }
 
 try {
@@ -270,6 +274,7 @@ try {
       if (url === 'Input URL introuvable' || url === 'URL Not Detected' || url === 'Invalid URL' ){
         return
       }
+      dwl_btn_text.textContent = `Start Bash Download (1)`;
     }
 
 
@@ -277,9 +282,8 @@ try {
     
     // désactiver interactions
     downloadButtonEl.style.pointerEvents = "none";
-    downloadButtonEl.textContent = "Start Bash Download ( 1 )";
-
-    const nb_fragment: string | null = localStorage.getItem("Fragments") || ""
+    
+    const nb_fragment: string | null = localStorage.getItem("Fragments") || "6"
     const noPart: string | null = localStorage.getItem("noPart") || "";
     const ignorError: string | null = localStorage.getItem("ignorError") || "";
 
@@ -303,8 +307,6 @@ try {
         max_concurrent: 3,
       };
 
-      console.log("MultiDwlvideosList for Rust:", MultiDwlvideosList.toArrayForRust());
-
       // IMPORTANT: Créer et afficher la barre de progression AVANT d'invoquer le téléchargement
       // pour que les listeners soient attachés et puissent recevoir les événements du backend
       progressBar = getOrCreateProgressBar();
@@ -315,7 +317,7 @@ try {
         try {
           (progressBar as any).reset();
         } catch (e) {
-          console.warn('Failed to reset progress bar:', e);
+          console.warn('{320.main.ts }Failed to reset progress bar:', e);
         }
         
         // Afficher la barre de progression
@@ -327,7 +329,6 @@ try {
           progressBar.style.opacity = '1';
         }
 
-        console.log('🚀 Progress bar reset and shown - listeners ready - invoking Rust function');
       }
 
       // Attendre un court instant pour s'assurer que les listeners sont bien attachés
@@ -336,14 +337,14 @@ try {
       let result;
       // Choisir la fonction à appeler en fonction du type de téléchargement
       if ( get_DWL_Type() === "list"){
-        console.log("Starting multi-video download with params:", paramsmultiVid);
+        console.log("{340.main.ts} Starting multi-video download with params:", paramsmultiVid);
         // Pour le multi-download, définir le nombre attendu de vidéos
         if (progressBar && typeof (progressBar as any).setExpectedTotal === 'function') {
           (progressBar as any).setExpectedTotal(MultiDwlvideosList.toArray().length);
         }
         result = await invoke<string>("multi_vd_dwl_caller", paramsmultiVid);
       }else{
-        console.log("Starting single-video download with params:", paramsOneVid);
+        console.log("{347.main.ts} Starting single-video download with params:", paramsOneVid);
         if (progressBar && typeof (progressBar as any).setExpectedTotal === 'function') {
           (progressBar as any).setExpectedTotal("1");
         }
@@ -436,7 +437,6 @@ try {
           NameInput.value = "";
         }
 
-        //console.log(result)
         const fileName = result.split(/[/\\]/).pop();
         customAlert(
           {
@@ -452,12 +452,12 @@ try {
         delete_temp_dwl();
         localStorage.setItem("Type",'single');
         localStorage.setItem("numberOfVideos",'0');
-        downloadButtonEl.textContent = `Start Bash Download ( 0 )` ;
-        console.log("la liste est : ",MultiDwlvideosList);
+        dwl_btn_text.textContent = `Start Bash Download ( 0 )`;
+        console.info("{456.main.ts} la liste des video a telecharger est vider : ",MultiDwlvideosList);
       }
       
     } catch (error: unknown) {
-      console.error("Erreur lors du téléchargement:", error);
+      console.error("{460.main.ts} Erreur lors du téléchargement:", error);
       if (progressBar) {
         progressBar.style.display = 'none';
       }
@@ -479,14 +479,11 @@ try {
         "error"
       );
 
-
-
-      //console.log(`❌ Erreur : ${errorMessage}`);
       
     } finally {
       // Réactiver le bouton et restaurer le texte
       downloadButtonEl.style.pointerEvents = "";
-      downloadButtonEl.textContent = `Start Bash Download ( ${localStorage.getItem("numberOfVideos")} )`
+      dwl_btn_text.textContent = `Start Bash Download ( ${localStorage.getItem("numberOfVideos")} )`;
     }
   });
   
@@ -531,9 +528,9 @@ appSettings?.addEventListener("click", () => {
 
 try {
   initLocalStorage();
-  //console.log("Local storage initialized successfully.");
+  console.log("{531.main.ts} Local storage initialized successfully.");
 } catch (error) {
-  console.error("Error init Local storage", error);
+  console.error("{533.main.ts} Error init Local storage", error);
 }
 
 
@@ -570,7 +567,7 @@ scheduleBtn?.addEventListener("click", async () => {
         
 
     } catch (error) {
-        console.error("Erreur :", error);
+        console.error("{570.main.ts} scheduleBtn :", error);
     }
 });
 
@@ -579,19 +576,17 @@ scheduleBtn?.addEventListener("click", async () => {
 export async function removeVideoFromList(id: string) {
   const removed = MultiDwlvideosList.remove(id);
   if (removed) {
-    console.log(`Video with id ${id} removed from the list.`);
+    console.log(`{579.main.ts} Video with id ${id} removed from the list.`);
   } else {
-    console.log(`Video with id ${id} not found in the list.`);
+    console.error(`{581.main.ts} Video with id ${id} not found in the list.`);
   }
-  console.log("Current list:", MultiDwlvideosList.toArray());
   return removed;
 }
 
 
 export async function clearVideoList() {
   MultiDwlvideosList.clear();
-  console.log("All videos cleared from the list.");
-  console.log("la liste est : ",MultiDwlvideosList);
+  console.log("{589.main.ts} All videos cleared from the list.");
 }
 
 //------------------------------ Support ------------------------------------//

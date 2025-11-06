@@ -153,15 +153,6 @@ export function customAlert(
     position: relative;
   `;
 
-  // Header avec icône et bouton fermer
-  const headerDiv = document.createElement("div");
-  headerDiv.style.cssText = `
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: ${title || subtitle ? "16px" : "0"};
-  `;
-
   // Icône principale
   const iconDiv = document.createElement("div");
   iconDiv.style.cssText = `
@@ -182,6 +173,10 @@ export function customAlert(
   // Bouton de fermeture moderne
   const closeButton = document.createElement("button");
   closeButton.style.cssText = `
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10; 
     width: 32px;
     height: 32px;
     border: none;
@@ -211,6 +206,8 @@ export function customAlert(
   const textContainer = document.createElement("div");
   textContainer.style.cssText = `
     flex: 1;
+    overflow-wrap: break-word;
+    word-break: break-word; 
   `;
 
   // Titre principal
@@ -273,12 +270,12 @@ export function customAlert(
   contentFlex.appendChild(iconDiv);
   contentFlex.appendChild(textContainer);
   
-  headerDiv.appendChild(contentFlex);
-  headerDiv.appendChild(closeButton);
-  
-  contentDiv.appendChild(headerDiv);
+  contentDiv.appendChild(contentFlex);
+
   alertDiv.appendChild(contentDiv);
+  alertDiv.appendChild(closeButton);
   alertDiv.appendChild(progressBar);
+
 
   overlay.appendChild(alertDiv);
   document.body.appendChild(overlay);

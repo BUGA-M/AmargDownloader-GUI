@@ -339,7 +339,6 @@ export async function openAppSettingsModal(){
         checkbox.id = id;
         checkbox.checked = checked === "true";
         checkbox.disabled = disabled
-        console.log(checkbox.checked)
         checkbox.style.cssText = `
             appearance: none;
             width: 22px;
@@ -620,8 +619,9 @@ export async function openAppSettingsModal(){
             await invoke<boolean>('toggle_startup', {
                 enable : autoStartCheckbox.checkbox.checked,
             });
+            console.info("{622.appSettings.ts} application settings changed !! ");
         } catch (error) {
-            console.error("Error applying settings:", error);
+            console.error("{623.appSettings.ts} Error applying application settings:", error);
         }
 
         setTimeout(() => {

@@ -17,7 +17,7 @@ export async function setupFolderOpener() {
             await invoke('open_folder', { path: folderPath });
             
         } catch (error) {
-            console.error('Erreur lors de l\'ouverture du dossier depuis système tray:', error);
+            console.error('{126.sendPath.ts} Erreur lors de l\'ouverture du dossier depuis système tray:', error);
         }
     });
 }

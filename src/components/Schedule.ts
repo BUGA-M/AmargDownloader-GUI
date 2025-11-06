@@ -449,7 +449,7 @@ function createCustomVideoAlert(videos: VideoData[], title: string = "Downloads 
                     clearVideoList();
                     localStorage.setItem("numberOfVideos",'0');
                     localStorage.setItem("Type",'single');
-                    const btnDwlAll = document.getElementById("download-btn") as HTMLDivElement
+                    const btnDwlAll = document.getElementById("dwl_btn_text") as HTMLSpanElement ;
                     btnDwlAll.textContent =  `Start Bash Download ( ${localStorage.getItem("numberOfVideos")} )`
                     
                     confirmOverlay.remove();
@@ -728,7 +728,6 @@ function createVideoCardWithDelete(videoData: VideoData, index: number, updateSe
                 // Si aucune vidéo restante, afficher le message d'état vide
                 if (newCount === 0) {
                     
-                    console.log("Aucune vidéo restante dans le planning.");
                     const content = document.querySelector(".customAlert") as HTMLDivElement;
                     const emptyState = document.createElement("div");
                     emptyState.style.cssText = `
@@ -761,7 +760,7 @@ function createVideoCardWithDelete(videoData: VideoData, index: number, updateSe
                 
                 const delresult = await removeVideoFromList(videoData.id);
                 if (delresult) {
-                    console.log(`Vidéo avec ID ${videoData.id} supprimée du planning.`);
+                    console.info(`{763.Schedule.ts} Vidéo avec ID ${videoData.id} supprimée du planning.`);
                 }
             }
         } catch (err) {
@@ -782,7 +781,7 @@ function createVideoCardWithDelete(videoData: VideoData, index: number, updateSe
                 "error"
             );
 
-            console.error("Erreur lors de la suppression :", err);
+            console.error("{784.Schedule.ts} Erreur lors de la suppression :", err);
         }
     });
 
@@ -999,8 +998,8 @@ function createVideoCardWithDelete(videoData: VideoData, index: number, updateSe
 
     downloadBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Ici tu pourras ajouter la logique de téléchargement
-        console.log('Téléchargement de:', videoData.title);
+        // btn de telechargement pas encore ajouter
+        console.warn('{1002.Schedule.ts} Téléchargement de:', videoData.title," pas encore ajouter");
     });
 
     // Assemblage de la carte
@@ -1129,11 +1128,9 @@ export async function fetchTempDwl(): Promise<Record<string, VideoData>> {
       errStr.includes('failed to open file');
 
     if (!isNotFound) {
-      // Logguer seulement les erreurs réelles
-      console.error('Erreur lecture temp_DWL.json :', err);
+      console.error('{1131.Schedule.ts} Erreur lecture temp_DWL.json :', err);
     } else {
-      // Optionnel : debug léger sans polluer la console d'erreur
-      console.debug('temp_DWL.json introuvable — retour d’un objet vide.');
+      console.debug('{113.Schedule.ts} temp_DWL.json introuvable — retour d’un objet vide.');
     }
 
     return {};
@@ -1144,19 +1141,19 @@ export async function fetchTempDwl(): Promise<Record<string, VideoData>> {
 
 export async function extractInfo_to_json(url: string | 'https://www.youtube.com/watch?v=ybaXWSghqG4', format: string, OutputName: string) {
   try {
-    console.log(OutputName);
+    console.info("{1144.Schedule.ts} " ,OutputName);
     const data_ajouter = await invoke('get_video_info', {
       url, 
       format, 
       outputname: OutputName
     });
-    console.log(data_ajouter);
+    console.info("{1150.Schedule.ts} ",data_ajouter);
     
-    // ⚠️ RETOURNER les données
+    // RETOURNER les données
     return data_ajouter;
     
   } catch (err) {
-    console.error("erreur dans la fonction extractInfo_to_json : ", err);
+    console.error("{1156.Schedule.ts} erreur dans la fonction extractInfo_to_json : ", err);
     throw err; // Re-lancer l'erreur pour que l'appelant puisse la gérer
   }
 }
@@ -1166,9 +1163,9 @@ export async function extractInfo_to_json(url: string | 'https://www.youtube.com
 export async function delete_temp_dwl() {
     try{
         const msg: string = await invoke('delete_temp_dwl');
-        console.log(msg);
+        console.info("{1166.Schedule.ts.delete_temp_dwl()} ",msg);
     }catch (err){
-        console.error('Impossible de supprimer temp_DWL.json : ', err);
+        console.error('{1168.Schedule.ts} Impossible de supprimer temp_DWL.json : ', err);
     }
 }
 
@@ -1191,8 +1188,6 @@ export async function SchedulePage(videos: VideoData[]){
   `;
   document.head.appendChild(fadeOutStyle);
 
-  //const data = await fetchTempDwl();
-  //console.log(data);
 }
 
 

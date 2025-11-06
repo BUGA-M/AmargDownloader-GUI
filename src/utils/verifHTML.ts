@@ -13,7 +13,6 @@ function isValidUrl(urlString: string): boolean {
 
 export function Verify( urlInput : HTMLInputElement | null): string{
     if (!urlInput) {
-      //console.error("Input URL introuvable (selector: input.url-input)");
       customAlert(
         {
           title: "URL Input Not Found",
@@ -21,8 +20,8 @@ export function Verify( urlInput : HTMLInputElement | null): string{
           message: `The URL input field could not be found on this page (selector: input.url-input).
       Please make sure the input exists and try again.`
         },
-        10000,   // Durée un peu plus longue pour lecture
-        "error" // Type : fond rouge
+        10000,   
+        "error" 
       );
 
 

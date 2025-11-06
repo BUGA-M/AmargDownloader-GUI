@@ -27,15 +27,18 @@ export function initSystemTheme(): void {
       : (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
 
     applyTheme(themeToApply);
+    observeDynamicElements(themeToApply);
 
     // Quand l’OS change de thème
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
       if (!localStorage.getItem("theme")) {
-        applyTheme(e.matches ? "dark" : "light"); // 👈 ICI on remet à jour les images aussi
+        const newTheme = e.matches ? "dark" : "light";
+        applyTheme(newTheme);
+        observeDynamicElements(newTheme); 
       }
     });
   } catch (e) {
-    console.error("Erreur dans le init thème système js :", e);
+    console.error("{664.initSystemTheme.ts} Erreur dans le init thème système :", e);
   }
 }
 
@@ -74,6 +77,7 @@ async function applyTheme(theme: "light" | "dark") {
     if (supportBody) {
       supportBody.style.border = theme === "light" ? "1px solid #af4c0f" : "1px solid #636363ff";
       supportBody.style.background = theme === "light"? "#e0e0e0": "#212121";
+      supportBody.style.color = theme === "light" ? "#161616ff" : "#f5f5f5ff";
     }
 
     //Support zone
@@ -85,7 +89,7 @@ async function applyTheme(theme: "light" | "dark") {
       supportZone.style.background = theme === "light" ? " #ffffffff": "linear-gradient(145deg, #121212, #1a1a1a)";
       supportZone.style.border = theme === "light" ? "1px solid #af4c0f" : "1px solid #333333ff";
       supportIcon.style.color = theme === "light" ? "#333333ff" : "#dfdfdfff";
-      supportText.style.color = theme === "light" ? "#161616ff" : "#f5f5f5ff";
+      supportText.style.color = theme === "light" ? "#161616ff" : "#f5f5f5ff ";
     }
 
 
@@ -95,11 +99,14 @@ async function applyTheme(theme: "light" | "dark") {
     messageSupport.style.background = theme === "light" ? "#e0e0e0" :  "#212121";
     messageSupport.style.color = theme === "light" ? "#161616ff" : "#dfdfdfff";
 
-      if (messageSupport?.textContent === `Need help ? \nContact our support team via email, our Discord server.`) {      
+    messageSupport.addEventListener("focus",()=>{
+      messageSupport.style.color = theme === "light" ? "#000000" : "#ffffff";
+    })
+
+    if (messageSupport?.textContent === `Need help ? \nContact our support team via email, our Discord server, or by opening an issue on our GitHub repository.`) {      
         messageSupport.style.color = "rgb(136, 136, 136)";
-      }else{
-        messageSupport.style.color = theme === "light" ? "#000000" : "#ffffff";
-      }
+    }
+    
     }
 
     // Support send
@@ -176,12 +183,13 @@ async function applyTheme(theme: "light" | "dark") {
       //--- key-zone ---
       keyZone.style.background = theme === "light"? "#e0e0e0 ": " rgb(33, 33, 33)";
       keyZone.style.borderRight= theme === "light" ? "1px solid #af4c0f" : "1px solid #383838";
-      
+      keyZone.style.color = theme === "light" ? "#000000" : "#ffffff";
       if (keyZone?.textContent === "Enter your ai studio key") {      
         keyZone.style.color = "rgb(136, 136, 136)";
-      }else{
-        keyZone.style.color = theme === "light" ? "#000000ff" : "#ffffffff";
-      }
+      };
+
+      
+
 
       //--- sendSvg ---
       sendKey.style.color = theme === "light" ? "#000000" : "#ffffff";
@@ -189,8 +197,8 @@ async function applyTheme(theme: "light" | "dark") {
       //chedulText.style.color = current === "light" ? "#000000" : "#ffffff";
       
       //----------------------- DWL Barre ------------------------------
-      const dwlContainer = document.querySelector(".download-progress-container") as HTMLDivElement;
-
+      const dwlContainer = document.querySelector(".download-progress-container") as HTMLDivElement; 
+      if (!dwlContainer) return; 
       if (dwlContainer) {
         // Update container background and border
         dwlContainer.style.background = theme === "light"
@@ -356,4 +364,41 @@ async function applyTheme(theme: "light" | "dark") {
 
     }
 
+}
+
+function observeDynamicElements(theme: "light" | "dark") {
+  const targets = [
+    ".download-progress-container",
+    ".minimized-bar",
+    ".key-zone"
+  ];
+
+  // Si un observer existe déjà, on le nettoie (évite les doublons)
+  if ((window as any).__themeObserver__) {
+    (window as any).__themeObserver__.disconnect();
+  }
+
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (!(node instanceof HTMLElement)) continue;
+
+        // Vérifie si le nœud ou un de ses descendants correspond à un élément cible
+        const isMatch = targets.some((cls) =>
+          node.matches(cls) || node.querySelector(cls)
+        );
+
+        if (isMatch) {
+          console.log("{664.initSystemeTheme.ts}  Nouvel élément détecté ",node," thème réappliqué →", theme);
+          applyTheme(theme);
+          break; 
+        }
+      }
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Sauvegarde la référence pour pouvoir le déconnecter plus tard
+  (window as any).__themeObserver__ = observer;
 }

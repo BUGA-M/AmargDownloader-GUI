@@ -175,7 +175,23 @@ export function renderKeyInput() {
     const placeholderText = 'Enter your ai studio key';
     keyZone.textContent = placeholderText ;
 
-    
+    keyZone.addEventListener("focus", () => {
+        const savedTheme = localStorage.getItem("theme") || document.documentElement.getAttribute("data-theme");
+        //const savedTheme = localStorage.getItem("theme");
+        if (keyZone.textContent === placeholderText) {
+            keyZone.textContent = "";
+            keyZone.style.color = ` ${savedTheme?.trim() === "dark" ? "#ffffffff" : "#000000ff"}`; 
+            sendKey.classList.remove("desabledDIV")
+            }
+    });
+
+    keyZone.addEventListener("blur", () => {
+    if ((keyZone.textContent ?? "").trim() === "") {
+        keyZone.textContent = placeholderText;
+        keyZone.style.color = "rgb(136, 136, 136)"; 
+        sendKey.classList.add("desabledDIV");
+    }
+    });
     
     const sendKey = document.createElement('div');
     sendKey.className = 'sendKey desabledDIV';
@@ -197,23 +213,7 @@ export function renderKeyInput() {
         cursor: pointer;
     `;
 
-    keyZone.addEventListener("focus", () => {
-        const THEME = document.documentElement.getAttribute("data-theme");
-        const savedTheme = THEME === "dark" ? localStorage.getItem("theme"):THEME;
-        if (keyZone.textContent === placeholderText) {
-            keyZone.textContent = "";
-            keyZone.style.color = ` ${savedTheme?.trim() === "dark" ? "#ffffffff" : "#000000ff"}`; 
-            sendKey.classList.remove("desabledDIV")
-            }
-    });
 
-    keyZone.addEventListener("blur", () => {
-    if ((keyZone.textContent ?? "").trim() === "") {
-        keyZone.textContent = placeholderText;
-        keyZone.style.color = "rgb(136, 136, 136)"; 
-        sendKey.classList.add("desabledDIV");
-    }
-    });
 
     sendKey.addEventListener("click", () => {
         const svg = sendKey.querySelector("svg") as SVGElement;

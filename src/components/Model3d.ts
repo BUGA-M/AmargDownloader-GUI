@@ -114,18 +114,18 @@ export function init3DViewer(container: HTMLElement, glbPath: string) {
         actions.push(action);
       });
 
-      console.log('Animations trouvées :', gltf.animations.map((a) => a.name));
+      console.info('{117.Model3d.ts} Animations trouvées :', gltf.animations.map((a) => a.name));
     },
     (xhr) => {
       if (xhr && xhr.total) {
-        console.log(`Chargement: ${Math.round((xhr.loaded / xhr.total) * 100)}%`);
+        console.info(`{121.Model3d.ts} Chargement: ${Math.round((xhr.loaded / xhr.total) * 100)}%`);
       } else if (xhr && xhr.loaded) {
-        console.log(`Chargement: ${xhr.loaded} bytes`);
+        console.info(`{123.Model3d.ts} Chargement: ${xhr.loaded} bytes`);
       } else {
-        console.log('Chargement en cours...');
+        console.info('{125.Model3d.ts} Chargement en cours...');
       }
     },
-    (error) => console.error('Erreur de chargement GLB:', error)
+    (error) => console.error('{128.Model3d.ts} Erreur de chargement GLB:', error)
   );
 
   attachPopupEvents(container);

@@ -9,7 +9,7 @@ export async function openStorageFolder() {
     await invoke("open_folder", { path: folderPath });
 
   } catch (err) {
-    console.error("Erreur ouverture de dowloads folder :", err);
+    console.error("{126.openFolder.ts} Erreur ouverture de dowloads folder :", err);
   }
 }
 

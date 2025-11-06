@@ -10,7 +10,7 @@ use tauri::{command, AppHandle, Emitter, Manager};
 use regex::Regex;
 use std::io::{BufRead, BufReader};
 
-use log::{info, warn};
+use log::{error, info, warn};
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt; // for creation_flags
@@ -101,7 +101,7 @@ pub async fn start_multi_download_background_await(
     if videos.is_empty() {
         return Err("Aucune vidéo à télécharger".to_string());
     }
-    info!("[start multi dwl appelee]");
+    info!(target: "app" ," start multi dwl function & nb of Videos is {}",videos.len());
     let download_id = uuid::Uuid::new_v4().to_string();
     let download_id_clone = download_id.clone();
     let max_concurrent = max_concurrent.unwrap_or(3);
@@ -233,7 +233,6 @@ struct CompletionPayload {
     error_message: Option<String>,
 }
 
-// Modifiez la fonction one_vd_dwl pour émettre l'événement AVANT la fin
 #[command]
 pub async fn one_vd_dwl(
     handle: AppHandle,
@@ -247,7 +246,7 @@ pub async fn one_vd_dwl(
 ) -> Result<String, String> {
     let no_part = no_part.unwrap_or(true);
     let ignore_errors = ignore_errors.unwrap_or(true);
-    let concurrent_fragments = concurrent_fragments.unwrap_or("4".to_string());
+    let concurrent_fragments = concurrent_fragments.unwrap_or("6".to_string());
 
     // ---------- Choix du format ----------
     let extract_audio = format
@@ -390,16 +389,16 @@ pub async fn one_vd_dwl(
 
     let progress_regex = Regex::new(
         //old regex
-        //r"\[download\]\s+(\d+\.?\d*)%\s+of\s+~?\s*(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)?\s+at\s+(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)?/s\s+ETA\s+(\d{2}:\d{2})"
-
+        r"\[download\]\s+(\d+\.?\d*)%\s+of\s+~?\s*(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)?\s+at\s+(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)?/s\s+ETA\s+(\d{2}:\d{2})"
+        
         //new regex besoin de blockage sur la taille exact
-        r"\[download\]\s+(\d+\.?\d*)%\s+of\s+~?\s*(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)\s+at\s+(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)/s\s+ETA\s+(\d{2}:\d{2}|Unknown)"
+        //r"\[download\]\s+(\d+\.?\d*)%\s+of\s+~?\s*(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)\s+at\s+(\d+\.?\d*)\s*(KiB|MiB|GiB|KB|MB|GB)/s\s+ETA\s+(\d{2}:\d{2}|Unknown)"
     ).unwrap();
 
     let mut global_total_bytes: Option<u64> = None;
     let mut stdout_output: String = String::new();
     let mut last_progress: f64 = 0.0; // ajouter [mut] n cas de modification
-    let mut size_locked: bool = false;
+    //let mut size_locked: bool = false;
     let mut first_downloaded: Option<u64> = None;
     let mut first_total: Option<u64> = None;
 
@@ -416,7 +415,7 @@ pub async fn one_vd_dwl(
     // Lecture ligne par ligne de stdout
     let stdout_reader = BufReader::new(stdout);
     for line in stdout_reader.lines().flatten() {
-        warn!("{:?}", &line);
+        // warn!("{:?}", &line);
 
         stdout_output.push_str(&line);
         stdout_output.push('\n');
@@ -449,44 +448,18 @@ pub async fn one_vd_dwl(
             let eta = caps.get(6).map(|m| m.as_str()).unwrap_or("00:00");
 
             //old fixage  de la taille
-            //if global_total_bytes.is_none() {
-            //    let calculated_total = convert_to_bytes(total_str, unit);
-            //    if calculated_total > 0 {
-            //        global_total_bytes = Some(calculated_total);
-            //        info!("📦 [TOTAL SIZE LOCKED] {} bytes ({:.2} MB)",
-            //            calculated_total,
-            //            calculated_total as f64 / (1024.0 * 1024.0));
-            //    }
-            //}
-
-            //New fixage  de la taille
-            if total_str > 0.1 {
+            if global_total_bytes.is_none() {
                 let calculated_total = convert_to_bytes(total_str, unit);
-
-                if calculated_total > 100 {
-                    // Si progression < 20% → TOUJOURS mettre à jour
-                    if progress < 20.0 {
-                        global_total_bytes = Some(calculated_total);
-                        info!(
-                            "📊 [SIZE UPDATE] {:.2} MB ({:.1}%) [Not locked yet]",
-                            calculated_total as f64 / (1024.0 * 1024.0),
-                            progress
-                        );
-                    }
-                    // Si progression >= 20% ET pas encore verrouillé → VERROUILLER
-                    else if !size_locked {
-                        global_total_bytes = Some(calculated_total);
-                        size_locked = true; // ✅ VERROUILLER ICI
-                        info!(
-                            "🔒🔒🔒 [SIZE LOCKED] {:.2} MB at {:.1}% 🔒🔒🔒",
-                            calculated_total as f64 / (1024.0 * 1024.0),
-                            progress
-                        );
-                    }
-                    // Si déjà verrouillé → NE RIEN FAIRE (pas de else, pas d'update)
+                if calculated_total > 0 {
+                    global_total_bytes = Some(calculated_total);
+                    info!(target:"app"," TOTAL SIZE LOCKED {} bytes ({:.2} MB)",
+                        calculated_total,
+                        calculated_total as f64 / (1024.0 * 1024.0));
                 }
             }
             let total_bytes = global_total_bytes.unwrap_or(0);
+            
+
             let downloaded_bytes = if total_bytes > 0 {
                 (total_bytes as f64 * progress / 100.0) as u64
             } else {
@@ -512,11 +485,6 @@ pub async fn one_vd_dwl(
                 video_name.clone(),
             );
 
-            // Log pour debug (à retirer en production)
-            info!(
-                "[PROGRESS] {}% | {}/{} bytes",
-                progress, downloaded_bytes, total_bytes
-            );
         }
     }
 
@@ -525,9 +493,8 @@ pub async fn one_vd_dwl(
 
     // ---------- ÉMISSION DU STATUS FINAL AVANT DE RETOURNER ----------
 
-    // Helper pour émettre le statut de complétion
     let emit_completion = |status: &str, path: Option<String>, error: Option<String>| {
-        // Émettre 100% si pas encore fait
+        // 100% avec la taille finale (prÃ©-rÃ©cupÃ©rÃ©e ou estimÃ©e)
         if last_progress <= 100.0 {
             emit_progress(
                 &handle,
@@ -535,9 +502,13 @@ pub async fn one_vd_dwl(
                 100.0,
                 "0KB".to_string(),
                 "00:00".to_string(),
-                first_downloaded.unwrap_or(0), // ✅ toute 1ᵉʳ valeur
+                first_downloaded.unwrap_or(0), // toute 1ᵉʳ valeur
                 first_total.unwrap_or(0),
                 video_name.clone(),
+            );
+            
+            info!(target: "app",
+                " DOWNLOAD COMPLETE DU VIDEO [{}]",video_name.clone()
             );
         }
 
@@ -551,8 +522,14 @@ pub async fn one_vd_dwl(
         let _ = handle.emit("download-complete-single", payload);
     };
 
-    // Vérification "already downloaded"
+    // ========================================== 
+    //               Error handler 
+    // ==========================================
+
     if stdout_output.contains("has already been downloaded") {
+        warn!(target: "app",
+                "VIDEO ALREADY DOWNLOADER OR OTHER ONE WITH THE SAME NAME"
+        );
         if let Some(line) = stdout_output
             .lines()
             .find(|l| l.contains("has already been downloaded"))
@@ -578,6 +555,9 @@ pub async fn one_vd_dwl(
         || stderr_output.contains("Network");
 
     if server_error {
+        error!(target: "app",
+            "SERVER ERROR [502 ou 503] "
+        );
         emit_completion(
             "server_error",
             None,
@@ -585,6 +565,9 @@ pub async fn one_vd_dwl(
         );
         return Ok("server issue".to_string());
     } else if not_found_error {
+        error!(target: "app",
+            "VIDEO NOT FOUND [404]"
+        );
         emit_completion(
             "not_found",
             None,
@@ -592,6 +575,9 @@ pub async fn one_vd_dwl(
         );
         return Ok("url not found or expired".to_string());
     } else if cnx_error {
+        error!(target: "app",
+            "NETWORK ERROR [Failed]"
+        );
         emit_completion(
             "connection_error",
             None,
@@ -620,11 +606,16 @@ pub async fn one_vd_dwl(
                     .and_then(|l| l.split_once("Destination: ").map(|(_, p)| p.trim()))
             })
             .unwrap_or(&output_option);
-
+            info!(target: "app",
+                " DOWNLOAD SUCCESS [200]"
+            );
         emit_completion("success", Some(final_path.to_string()), None);
         Ok(final_path.to_string())
     } else {
         emit_completion("error", None, Some(stderr_output.clone()));
+        error!(target: "app",
+                "UNKNOW ERROR {:?}",Some(stderr_output.clone())
+        );
         Err(stderr_output)
     }
 }
@@ -661,12 +652,5 @@ fn emit_progress(
         total_bytes,
         video_name,
     };
-    info!("[emit progress] {:?} ", payload.url);
-    info!("[emit progress] {:?} ", payload.progress);
-    info!("[emit progress] {:?} ", payload.speed);
-    info!("[emit progress] {:?} ", payload.eta);
-    info!("[emit progress] {:?} ", payload.downloaded_bytes);
-    info!("[emit progress] {:?} ", payload.total_bytes);
-    info!("[emit progress] {:?} ", payload.video_name);
     let _ = handle.emit("download-progress", payload);
 }

@@ -16,9 +16,11 @@ use tauri_plugin_log::{Target, TargetKind};
 
 use tokio::time::{sleep, Duration};
 use webbrowser;
+use log::info;
 
 mod downloads;
 mod info_urls;
+mod logger;
 
 #[command]
 async fn is_startup_enabled(app: tauri::AppHandle) -> Result<bool, String> {
@@ -92,6 +94,7 @@ async fn open_folder(path: String) -> Result<(), String> {
 
 #[command]
 async fn open_link(url: String) -> Result<(), String> {
+    info!(target: "app"," New link opend {:?}",&url);
     webbrowser::open(&url).map_err(|e| format!("Failed to open browser: {}", e))?;
     Ok(())
 }
@@ -147,14 +150,19 @@ async fn multi_vd_dwl_caller(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .targets([
-                    Target::new(TargetKind::Stdout),
+                    //Target::new(TargetKind::Stdout) pour cmd logs,
                     Target::new(TargetKind::LogDir {
-                        file_name: Some("Downloads".to_string()),
-                    }),
+                        file_name: Some("frontend_console".to_string()),
+                    })
+                    .filter(|metadata| metadata.target().starts_with("frontend")),
+
+                    Target::new(TargetKind::LogDir {
+                        file_name: Some("App".to_string()),
+                    })
+                    .filter(|metadata| metadata.target().starts_with("app")),
                 ])
                 .build(),
         )
@@ -188,18 +196,19 @@ pub fn run() {
             info_urls::delete_video_by_id,
             info_urls::copy_temp_to_history,
             info_urls::add_to_single_download_by_date,
-            open_link
+            open_link,
+            logger::frontend_log
         ])
         // Setup (config initiale)
         .setup(|app| {
             let splash = app.get_webview_window("splashscreen").unwrap();
             let main = app.get_webview_window("main").unwrap();
 
-            // ✅ Détecter le mode au début
+            //  Détecter le mode au début
             let args: Vec<String> = std::env::args().collect();
             let is_startup_mode = args.contains(&"--minimized".to_string());
 
-            // ✅ Menu et Tray (peu importe le mode)
+            // Menu et Tray (peu importe le mode)
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let open_i = MenuItem::with_id(app, "open", "Open AMARG Window", true, None::<&str>)?;
             let open_folder_i = MenuItem::with_id(
@@ -237,7 +246,7 @@ pub fn run() {
                 _ => {}
             });
 
-            // ✅ Logique conditionnelle unifiée
+            //  Logique conditionnelle unifiée
             if is_startup_mode {
                 // MODE STARTUP : Tray seulement, pas de splashscreen
                 let _ = splash.destroy(); // On n'a pas besoin du splash
@@ -261,7 +270,7 @@ pub fn run() {
 
             Ok(())
         })
-        // ✅ Empêcher la fermeture → cache la fenêtre
+        // Empêcher la fermeture → cache la fenêtre
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
